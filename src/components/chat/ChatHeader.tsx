@@ -57,17 +57,17 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   const typingText = typingUsers.map(u => u.displayName).join(', ') + ' typing...';
 
   return (
-    <div className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-4 py-3 flex items-center justify-between shadow-sm z-10">
-      <div className="flex items-center space-x-3 min-w-0">
+    <div className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-2.5 sm:px-4 py-2.5 flex items-center justify-between shadow-sm z-10 w-full max-w-full overflow-hidden">
+      <div className="flex items-center space-x-1.5 sm:space-x-3 min-w-0 flex-1 pr-1">
         <button
           onClick={onBackMobile}
-          className="md:hidden p-1.5 -ml-1 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+          className="md:hidden p-1 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors flex-shrink-0"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
 
         <div
-          className="flex items-center space-x-3 cursor-pointer min-w-0 group"
+          className="flex items-center space-x-2 sm:space-x-3 cursor-pointer min-w-0 flex-1 group"
           onClick={onOpenGroupInfo}
         >
           <Avatar
@@ -75,13 +75,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             name={activeChat.name || 'Chat'}
             isOnline={!activeChat.isGroup ? isOnline : undefined}
             size="md"
+            className="flex-shrink-0"
           />
 
-          <div className="min-w-0">
-            <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
               {activeChat.name || 'Chat'}
             </h2>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
+            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
               {isTyping ? (
                 <span className="text-emerald-600 dark:text-emerald-400 font-medium animate-pulse">
                   {typingText}
@@ -98,36 +99,36 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center space-x-1 relative">
+      <div className="flex items-center space-x-0.5 sm:space-x-1 flex-shrink-0 relative">
         <button
           onClick={handleCall}
-          className="p-2 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"
+          className="p-1.5 sm:p-2 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"
           title="Start Audio Call"
         >
-          <Phone className="w-5 h-5" />
+          <Phone className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
 
         <button
           onClick={onToggleSearchInChat}
-          className="p-2 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"
+          className="p-1.5 sm:p-2 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors hidden sm:block"
           title="Search messages"
         >
-          <Search className="w-5 h-5" />
+          <Search className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
 
         <button
           onClick={onOpenGroupInfo}
-          className="p-2 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"
+          className="p-1.5 sm:p-2 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"
           title="Contact / Group Info"
         >
-          <Info className="w-5 h-5" />
+          <Info className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
 
         <button
           onClick={() => setShowMenu(!showMenu)}
-          className="p-2 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"
+          className="p-1.5 sm:p-2 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"
         >
-          <MoreVertical className="w-5 h-5" />
+          <MoreVertical className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
 
         {showMenu && (

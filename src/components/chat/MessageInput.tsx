@@ -136,11 +136,11 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           onCancel={() => setIsRecordingVoice(false)}
         />
       ) : (
-        <form onSubmit={handleSend} className="flex items-center space-x-2">
+        <form onSubmit={handleSend} className="flex items-center space-x-1 sm:space-x-2 w-full max-w-full overflow-hidden">
           <button
             type="button"
             onClick={() => setShowPicker(!showPicker)}
-            className="p-2.5 text-zinc-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"
+            className="p-1.5 sm:p-2.5 text-zinc-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors flex-shrink-0"
             title="Emojis & Stickers"
           >
             <Smile className="w-5 h-5" />
@@ -157,7 +157,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="p-2.5 text-zinc-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"
+            className="p-1.5 sm:p-2.5 text-zinc-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors flex-shrink-0"
             title="Attach file or image"
           >
             <Paperclip className="w-5 h-5" />
@@ -167,7 +167,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           <button
             type="button"
             onClick={() => setIsViewOnceEnabled(!isViewOnceEnabled)}
-            className={`p-2.5 rounded-xl transition-colors flex items-center space-x-1 ${
+            className={`p-1.5 sm:p-2.5 rounded-xl transition-colors flex items-center space-x-1 flex-shrink-0 ${
               isViewOnceEnabled
                 ? 'bg-emerald-500/20 text-emerald-500 font-semibold'
                 : 'text-zinc-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
@@ -182,8 +182,8 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             type="text"
             value={content}
             onChange={handleTextChange}
-            placeholder={isViewOnceEnabled ? 'Send View Once photo message...' : 'Type a message...'}
-            className="flex-1 px-4 py-2.5 bg-zinc-100 dark:bg-zinc-800/80 border border-transparent focus:border-emerald-500/50 rounded-xl text-sm focus:outline-none dark:text-white placeholder-zinc-400 transition-all"
+            placeholder={isViewOnceEnabled ? 'Send View Once photo...' : 'Type a message...'}
+            className="flex-1 min-w-0 px-3 sm:px-4 py-2 sm:py-2.5 bg-zinc-100 dark:bg-zinc-800/80 border border-transparent focus:border-emerald-500/50 rounded-xl text-xs sm:text-sm focus:outline-none dark:text-white placeholder-zinc-400 transition-all"
           />
 
           {content.trim() ? (
