@@ -114,8 +114,18 @@ export function initSocketHandler(httpServer: HTTPServer) {
           updatedAt: nowIso,
         };
 
-        // 1. INSTANT real-time WebSocket broadcast to chat room (0ms latency!)
+        // 1. INSTANT real-time WebSocket broadcast to chat room AND direct user rooms (0ms latency!)
         io.to(`chat:${data.chatId}`).emit('message:new', instantMessage);
+
+        db.getChatForUser(data.chatId, userId).then((chat) => {
+          if (chat && chat.members) {
+            for (const m of chat.members) {
+              if (m.userId !== userId) {
+                io.to(`user:${m.userId}`).emit('message:new', instantMessage);
+              }
+            }
+          }
+        }).catch(() => {});
 
         if (typeof callback === 'function') {
           callback({ status: 'ok', message: instantMessage });

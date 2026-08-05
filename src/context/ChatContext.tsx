@@ -130,6 +130,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
 
           const socket = getSocket(token);
+          socket?.emit('chat:join', { chatId: activeChatId });
           socket?.emit('chat:mark_read', { chatId: activeChatId });
         }
       } catch (err) {
