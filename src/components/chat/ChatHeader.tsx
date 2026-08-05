@@ -58,7 +58,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   const typingText = typingUsers.map(u => u.displayName).join(', ') + ' typing...';
 
   return (
-    <div className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-2.5 sm:px-4 py-2.5 flex items-center justify-between shadow-sm z-10 w-full max-w-full overflow-hidden">
+    <div className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-2.5 sm:px-4 py-2.5 flex items-center justify-between shadow-sm z-30 relative w-full max-w-full">
       <div className="flex items-center space-x-1.5 sm:space-x-3 min-w-0 flex-1 pr-1">
         <button
           onClick={onBackMobile}

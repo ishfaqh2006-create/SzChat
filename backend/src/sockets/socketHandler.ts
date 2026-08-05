@@ -194,21 +194,41 @@ export function initSocketHandler(httpServer: HTTPServer) {
 
     socket.on('chat:mark_read', async ({ chatId }: { chatId: string }) => {
       try {
-        await db.markChatAsRead(chatId, userId);
-        await prisma.message.updateMany({
+        // 1. INSTANT 0ms WebSocket broadcast for real-time double blue ticks
+        io.to(`chat:${chatId}`).emit('chat:read', { chatId, userId });
+
+        db.getChatForUser(chatId, userId).then((chat) => {
+          if (chat && chat.members) {
+            for (const m of chat.members) {
+              if (m.userId !== userId) {
+                io.to(`user:${m.userId}`).emit('chat:read', { chatId, userId });
+              }
+            }
+          }
+        }).catch(() => {});
+
+        // 2. Background database update
+        db.markChatAsRead(chatId, userId).catch(() => {});
+        prisma.message.updateMany({
           where: { chatId, senderId: { not: userId } },
           data: { status: 'READ' },
-        });
-        io.to(`chat:${chatId}`).emit('chat:read', { chatId, userId });
-        const chat = await db.getChatForUser(chatId, userId);
-        if (chat && chat.members) {
-          for (const m of chat.members) {
-            io.to(`user:${m.userId}`).emit('chat:read', { chatId, userId });
-          }
-        }
+        }).catch(() => {});
       } catch (err) {
         console.error('Mark read error:', err);
       }
+    });
+
+    socket.on('message:react', ({ messageId, chatId, emoji }: { messageId: string; chatId: string; emoji: string }) => {
+      io.to(`chat:${chatId}`).emit('message:reaction', { messageId, chatId, emoji, userId });
+      db.getChatForUser(chatId, userId).then((chat) => {
+        if (chat && chat.members) {
+          for (const m of chat.members) {
+            if (m.userId !== userId) {
+              io.to(`user:${m.userId}`).emit('message:reaction', { messageId, chatId, emoji, userId });
+            }
+          }
+        }
+      }).catch(() => {});
     });
 
     // WebRTC Signaling

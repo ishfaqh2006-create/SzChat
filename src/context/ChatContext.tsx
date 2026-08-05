@@ -40,6 +40,7 @@ interface ChatContextType {
   deleteMessageForMe: (messageId: string) => Promise<void>;
   deleteMessageForEveryone: (messageId: string) => Promise<void>;
   openViewOnceMedia: (messageId: string) => void;
+  reactToMessage: (messageId: string, emoji: string) => void;
   sendTyping: (isTyping: boolean) => void;
   startDirectChat: (targetUserId: string) => Promise<Chat>;
   createGroup: (name: string, description: string, memberIds: string[]) => Promise<Chat>;
@@ -253,16 +254,34 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
     };
 
+    const handleMessageReaction = ({ messageId, emoji, userId: rxUserId }: { messageId: string; chatId: string; emoji: string; userId: string }) => {
+      setMessages(prev =>
+        prev.map(m => {
+          if (m.id === messageId) {
+            const current = m.reactions || [];
+            const exists = current.some(r => r.emoji === emoji && r.userId === rxUserId);
+            const updated = exists
+              ? current.filter(r => !(r.emoji === emoji && r.userId === rxUserId))
+              : [...current, { emoji, userId: rxUserId }];
+            return { ...m, reactions: updated };
+          }
+          return m;
+        })
+      );
+    };
+
     socket.on('message:new', handleNewMessage);
     socket.on('message:updated', handleMessageUpdated);
     socket.on('typing:update', handleTypingUpdate);
     socket.on('chat:read', handleChatRead);
+    socket.on('message:reaction', handleMessageReaction);
 
     return () => {
       socket.off('message:new', handleNewMessage);
       socket.off('message:updated', handleMessageUpdated);
       socket.off('typing:update', handleTypingUpdate);
       socket.off('chat:read', handleChatRead);
+      socket.off('message:reaction', handleMessageReaction);
     };
   }, [token, user, refreshChats]);
 
@@ -363,6 +382,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setMessages(prev =>
       prev.map(m => (m.id === messageId ? { ...m, isViewed: true, fileUrl: undefined } : m))
     );
+  };
+
+  const reactToMessage = (messageId: string, emoji: string) => {
+    if (!token || !activeChatId) return;
+    const socket = getSocket(token);
+    socket?.emit('message:react', { messageId, chatId: activeChatId, emoji });
   };
 
   const sendTyping = (isTyping: boolean) => {
@@ -555,6 +580,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         deleteMessageForMe,
         deleteMessageForEveryone,
         openViewOnceMedia,
+        reactToMessage,
         sendTyping,
         startDirectChat,
         createGroup,

@@ -63,6 +63,7 @@ export interface Message {
   isViewOnce?: boolean;
   isViewed?: boolean;
   status: 'sent' | 'delivered' | 'read';
+  reactions?: { emoji: string; userId: string }[];
   createdAt: string;
   updatedAt: string;
 }

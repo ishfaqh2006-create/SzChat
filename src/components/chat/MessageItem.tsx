@@ -28,16 +28,15 @@ interface MessageItemProps {
 
 export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onForward, onEdit }) => {
   const { user } = useAuth();
-  const { deleteMessageForMe, deleteMessageForEveryone, openViewOnceMedia } = useChat();
+  const { deleteMessageForMe, deleteMessageForEveryone, openViewOnceMedia, reactToMessage } = useChat();
 
   const [showMenu, setShowMenu] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [viewOncePreviewUrl, setViewOncePreviewUrl] = useState<string | null>(null);
-  const [reactions, setReactions] = useState<string[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const toggleReaction = (emoji: string) => {
-    setReactions(prev => (prev.includes(emoji) ? prev.filter(e => e !== emoji) : [...prev, emoji]));
+    reactToMessage(message.id, emoji);
     setShowMenu(false);
   };
 
@@ -46,7 +45,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
   // System Messages
   if (message.type === 'system') {
     return (
-      <div className="flex justify-center my-2">
+      <div className="flex justify-center my-2 w-full">
         <span className="px-3 py-1 bg-zinc-200/80 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-400 text-[11px] font-medium rounded-full shadow-sm text-center">
           {message.content}
         </span>
@@ -82,13 +81,15 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
     minute: '2-digit',
   });
 
+  const displayReactions = message.reactions || [];
+
   return (
-    <div
-      className={`flex flex-col max-w-[85%] ${
-        isMine ? 'items-end' : 'items-start'
-      } group relative my-1 transition-all`}
-    >
-      <div className="relative group max-w-full">
+    <div className="w-full flex flex-col my-1">
+      <div
+        className={`relative group max-w-[85%] sm:max-w-[70%] ${
+          isMine ? 'ml-auto text-right' : 'mr-auto text-left'
+        }`}
+      >
         {/* Sender Name in Group Chat */}
         {!isMine && message.sender && (
           <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mb-0.5 block px-1">
@@ -330,11 +331,11 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
       </div>
 
       {/* Emoji Reaction Badges */}
-      {reactions.length > 0 && (
-        <div className={`flex items-center space-x-1 mt-0.5 ${isMine ? 'justify-end' : 'justify-start'}`}>
+      {displayReactions.length > 0 && (
+        <div className={`flex items-center space-x-1 mt-0.5 ${isMine ? 'justify-end ml-auto' : 'justify-start mr-auto'}`}>
           <div className="px-2 py-0.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-full text-xs shadow-sm flex items-center space-x-1 animate-scaleIn">
-            {reactions.map((r) => (
-              <span key={r}>{r}</span>
+            {displayReactions.map((r, idx) => (
+              <span key={idx}>{r.emoji}</span>
             ))}
           </div>
         </div>
