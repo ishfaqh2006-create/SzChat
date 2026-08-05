@@ -1,0 +1,6 @@
+{
+  "name": "SzChat",
+  "description": "Full-featured real-time messaging and audio calling application with WhatsApp-like UI, group chats, voice notes, media sharing, and WebRTC calling.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
