@@ -180,9 +180,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       }
 
-      // Play sound
+      // Play sound and send delivery receipt
       if (msg.senderId !== user.id) {
         soundEffects.playMessageReceived();
+        const socket = getSocket(token);
+        socket?.emit('message:delivered', { messageId: msg.id, chatId: msg.chatId });
       } else {
         soundEffects.playMessageSent();
       }

@@ -198,13 +198,13 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
                 {message.isEdited && <span>edited</span>}
                 <span>{formattedTime}</span>
                 {isMine && (
-                  <span className="ml-1">
-                    {message.status === 'read' ? (
-                      <CheckCheck className="w-3.5 h-3.5 text-sky-400 font-bold" />
-                    ) : message.status === 'delivered' ? (
-                      <CheckCheck className="w-3.5 h-3.5 text-zinc-300" />
+                  <span className="ml-1 flex-shrink-0 inline-flex items-center">
+                    {(message.status || 'sent').toLowerCase() === 'read' ? (
+                      <CheckCheck className="w-3.5 h-3.5 text-sky-400 font-extrabold" title="Read" />
+                    ) : (message.status || 'sent').toLowerCase() === 'delivered' ? (
+                      <CheckCheck className="w-3.5 h-3.5 text-emerald-200" title="Delivered" />
                     ) : (
-                      <Check className="w-3.5 h-3.5 text-zinc-300" />
+                      <Check className="w-3.5 h-3.5 text-emerald-200/70" title="Sent" />
                     )}
                   </span>
                 )}

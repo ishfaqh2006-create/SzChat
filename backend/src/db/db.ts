@@ -642,6 +642,16 @@ class Database {
       },
     });
 
+    // Mark incoming messages as DELIVERED in the background
+    prisma.message.updateMany({
+      where: {
+        chatId,
+        senderId: { not: userId },
+        status: 'SENT',
+      },
+      data: { status: 'DELIVERED' },
+    }).catch(() => {});
+
     return messages.reverse().map(formatMessage);
   }
 
