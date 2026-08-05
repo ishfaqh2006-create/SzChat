@@ -237,14 +237,30 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     };
 
+    const handleChatRead = ({ chatId }: { chatId: string; userId: string }) => {
+      setMessages(prev =>
+        prev.map(m => (m.chatId === chatId ? { ...m, status: 'read' } : m))
+      );
+      setChats(prev =>
+        prev.map(c => {
+          if (c.id === chatId && c.lastMessage) {
+            return { ...c, lastMessage: { ...c.lastMessage, status: 'read' } };
+          }
+          return c;
+        })
+      );
+    };
+
     socket.on('message:new', handleNewMessage);
     socket.on('message:updated', handleMessageUpdated);
     socket.on('typing:update', handleTypingUpdate);
+    socket.on('chat:read', handleChatRead);
 
     return () => {
       socket.off('message:new', handleNewMessage);
       socket.off('message:updated', handleMessageUpdated);
       socket.off('typing:update', handleTypingUpdate);
+      socket.off('chat:read', handleChatRead);
     };
   }, [token, user, refreshChats]);
 

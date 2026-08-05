@@ -155,6 +155,7 @@ export function initSocketHandler(httpServer: HTTPServer) {
         const updated = await db.updateMessageStatus(messageId, 'delivered');
         if (updated) {
           io.to(`chat:${chatId}`).emit('message:updated', updated);
+          io.to(`user:${updated.senderId}`).emit('message:updated', updated);
         }
       } catch (err) {
         console.error('Delivered error:', err);
@@ -166,6 +167,7 @@ export function initSocketHandler(httpServer: HTTPServer) {
         const updated = await db.viewOnceOpenedMessage(messageId);
         if (updated) {
           io.to(`chat:${chatId}`).emit('message:updated', updated);
+          io.to(`user:${updated.senderId}`).emit('message:updated', updated);
         }
       } catch (err) {
         console.error('View once open error:', err);
@@ -198,6 +200,12 @@ export function initSocketHandler(httpServer: HTTPServer) {
           data: { status: 'READ' },
         });
         io.to(`chat:${chatId}`).emit('chat:read', { chatId, userId });
+        const chat = await db.getChatForUser(chatId, userId);
+        if (chat && chat.members) {
+          for (const m of chat.members) {
+            io.to(`user:${m.userId}`).emit('chat:read', { chatId, userId });
+          }
+        }
       } catch (err) {
         console.error('Mark read error:', err);
       }
