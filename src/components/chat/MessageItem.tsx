@@ -33,7 +33,13 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
   const [showMenu, setShowMenu] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [viewOncePreviewUrl, setViewOncePreviewUrl] = useState<string | null>(null);
+  const [reactions, setReactions] = useState<string[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const toggleReaction = (emoji: string) => {
+    setReactions(prev => (prev.includes(emoji) ? prev.filter(e => e !== emoji) : [...prev, emoji]));
+    setShowMenu(false);
+  };
 
   const isMine = message.senderId === user?.id;
 
@@ -77,8 +83,12 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
   });
 
   return (
-    <div className={`flex flex-col my-1 group ${isMine ? 'items-end' : 'items-start'}`}>
-      <div className="relative max-w-[85%] sm:max-w-[70%]">
+    <div
+      className={`flex flex-col max-w-[85%] ${
+        isMine ? 'items-end' : 'items-start'
+      } group relative my-1 transition-all`}
+    >
+      <div className="relative group max-w-full">
         {/* Sender Name in Group Chat */}
         {!isMine && message.sender && (
           <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mb-0.5 block px-1">
@@ -98,7 +108,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
 
         {/* Main Message Container */}
         <div
-          className={`relative px-3 py-2 rounded-2xl shadow-sm text-sm break-words transition-all ${
+          className={`relative px-3 py-2 rounded-2xl shadow-sm text-sm break-words transition-all max-w-full ${
             isMine
               ? 'bg-emerald-600 text-white rounded-br-none'
               : 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200/80 dark:border-zinc-700/80 rounded-bl-none'
@@ -234,8 +244,21 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
           <div
             className={`absolute z-50 top-10 ${
               isMine ? 'right-0' : 'left-0'
-            } w-44 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl py-1 text-xs`}
+            } w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl py-1 text-xs`}
           >
+            {/* Quick Emoji Reaction Bar */}
+            <div className="px-2 py-1.5 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-around">
+              {['👍', '❤️', '😂', '😮', '😢', '🔥'].map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => toggleReaction(emoji)}
+                  className="hover:scale-125 transition-transform text-sm p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
             <button
               onClick={() => {
                 onReply(message);
@@ -305,6 +328,17 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
           </div>
         )}
       </div>
+
+      {/* Emoji Reaction Badges */}
+      {reactions.length > 0 && (
+        <div className={`flex items-center space-x-1 mt-0.5 ${isMine ? 'justify-end' : 'justify-start'}`}>
+          <div className="px-2 py-0.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-full text-xs shadow-sm flex items-center space-x-1 animate-scaleIn">
+            {reactions.map((r) => (
+              <span key={r}>{r}</span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
