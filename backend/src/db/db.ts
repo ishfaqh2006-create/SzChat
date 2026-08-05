@@ -180,9 +180,12 @@ class Database {
     }
 
     const user = await prisma.user.findUnique({ where: { id } });
-    if (!user) return null;
+    if (!user) {
+      this.userCache.delete(id);
+      return null;
+    }
     const formatted = formatUser(user);
-    this.userCache.set(id, { user: formatted, expires: Date.now() + 60000 });
+    this.userCache.set(id, { user: formatted, expires: Date.now() + 5000 });
     return formatted;
   }
 
@@ -368,11 +371,13 @@ class Database {
     let avatarUrl = chat.avatarUrl || undefined;
 
     if (!chat.isGroup) {
-      const otherMember = members.find((m) => m.userId !== userId) || members[0];
-      if (otherMember && otherMember.user) {
-        name = otherMember.user.displayName;
-        avatarUrl = otherMember.user.avatarUrl;
+      const otherMember = members.find((m) => m.userId !== userId);
+      if (!otherMember || !otherMember.user) {
+        // Partner user was deleted from DB directly, ignore orphaned chat
+        return null;
       }
+      name = otherMember.user.displayName;
+      avatarUrl = otherMember.user.avatarUrl;
     }
 
     return {

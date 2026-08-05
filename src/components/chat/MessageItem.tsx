@@ -212,10 +212,14 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
             </>
           )}
 
-          {/* Action Trigger Button on Hover */}
+          {/* Action Trigger Button on Hover or Touch */}
           <button
-            onClick={() => setShowMenu(!showMenu)}
-            className={`absolute top-1 right-1 p-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity ${
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowMenu(!showMenu);
+            }}
+            className={`absolute top-1 right-1 p-1 rounded-lg opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity z-20 ${
               isMine
                 ? 'bg-emerald-700/80 text-white hover:bg-emerald-800'
                 : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200'
@@ -228,9 +232,9 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
         {/* Context Menu Dropdown */}
         {showMenu && (
           <div
-            className={`absolute z-30 top-8 ${
+            className={`absolute z-50 top-10 ${
               isMine ? 'right-0' : 'left-0'
-            } w-40 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl py-1 text-xs`}
+            } w-44 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl py-1 text-xs`}
           >
             <button
               onClick={() => {
