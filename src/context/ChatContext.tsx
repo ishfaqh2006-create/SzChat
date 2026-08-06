@@ -153,7 +153,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Emit delivery receipt if recipient received message
       if (msg.senderId !== user.id) {
-        socket.emit('message:delivered', { messageId: msg.id, chatId: msg.chatId });
+        socket.emit('message:delivered', { messageId: msg.id, chatId: msg.chatId, senderId: msg.senderId });
+        soundEffects.playMessageReceived();
+      } else {
+        soundEffects.playMessageSent();
       }
 
       // Update active message thread if recipient is viewing this chat
@@ -174,20 +177,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return [...prev, msg];
         });
 
-        // Mark read immediately
-        fetch(`/api/chats/${msg.chatId}/read`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      }
-
-      // Play sound and send delivery receipt
-      if (msg.senderId !== user.id) {
-        soundEffects.playMessageReceived();
-        const socket = getSocket(token);
-        socket?.emit('message:delivered', { messageId: msg.id, chatId: msg.chatId });
-      } else {
-        soundEffects.playMessageSent();
+        if (msg.senderId !== user.id) {
+          // Mark read immediately in DB & via socket
+          fetch(`/api/chats/${msg.chatId}/read`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+          }).catch(() => {});
+          socket.emit('chat:mark_read', { chatId: msg.chatId });
+        }
       }
 
       // Update chats list in memory without triggering network HTTP GET
@@ -219,18 +216,34 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     };
 
-    const handleMessageUpdated = (updatedMsg: Message) => {
-      const normMsg: Message = {
-        ...updatedMsg,
-        status: (updatedMsg.status || 'sent').toLowerCase() as any,
-      };
-      setMessages(prev => prev.map(m => m.id === normMsg.id ? normMsg : m));
-      setChats(prev => prev.map(c => {
-        if (c.id === normMsg.chatId && c.lastMessage?.id === normMsg.id) {
-          return { ...c, lastMessage: normMsg };
-        }
-        return c;
-      }));
+    const handleMessageUpdated = (updatedMsg: Partial<Message> & { id: string; chatId: string }) => {
+      setMessages(prev =>
+        prev.map(m => {
+          if (m.id === updatedMsg.id) {
+            return {
+              ...m,
+              ...updatedMsg,
+              status: updatedMsg.status ? (updatedMsg.status.toLowerCase() as any) : m.status,
+            };
+          }
+          return m;
+        })
+      );
+      setChats(prev =>
+        prev.map(c => {
+          if (c.id === updatedMsg.chatId && c.lastMessage?.id === updatedMsg.id) {
+            return {
+              ...c,
+              lastMessage: {
+                ...c.lastMessage,
+                ...updatedMsg,
+                status: updatedMsg.status ? (updatedMsg.status.toLowerCase() as any) : c.lastMessage.status,
+              },
+            };
+          }
+          return c;
+        })
+      );
     };
 
     const handleTypingUpdate = (status: TypingStatus) => {
@@ -244,14 +257,15 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     };
 
-    const handleChatRead = ({ chatId }: { chatId: string; userId: string }) => {
+    const handleChatRead = ({ chatId }: { chatId: string; userId?: string }) => {
       setMessages(prev =>
         prev.map(m => (m.chatId === chatId ? { ...m, status: 'read' } : m))
       );
       setChats(prev =>
         prev.map(c => {
-          if (c.id === chatId && c.lastMessage) {
-            return { ...c, lastMessage: { ...c.lastMessage, status: 'read' } };
+          if (c.id === chatId) {
+            const lastMsg = c.lastMessage ? { ...c.lastMessage, status: 'read' as const } : undefined;
+            return { ...c, unreadCount: 0, lastMessage: lastMsg };
           }
           return c;
         })

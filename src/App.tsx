@@ -36,7 +36,7 @@ function MainApp() {
 
   // Handle Hardware & Browser Back Button (popstate) to go 1 step back inside app
   useEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
+    const handlePopState = () => {
       if (isNewChatOpen) {
         setIsNewChatOpen(false);
       } else if (isNewGroupOpen) {
@@ -54,10 +54,15 @@ function MainApp() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [isNewChatOpen, isNewGroupOpen, isGroupInfoOpen, isSettingsOpen, activeChatId, selectChat]);
 
-  // Push history state whenever active chat or modal changes
+  // Push history state ONCE whenever opening a chat or modal
+  const hasPushedStateRef = React.useRef(false);
   useEffect(() => {
-    if (activeChatId || isNewChatOpen || isNewGroupOpen || isGroupInfoOpen || isSettingsOpen) {
+    const isAnyActive = !!(activeChatId || isNewChatOpen || isNewGroupOpen || isGroupInfoOpen || isSettingsOpen);
+    if (isAnyActive && !hasPushedStateRef.current) {
       window.history.pushState({ szchat: true }, '');
+      hasPushedStateRef.current = true;
+    } else if (!isAnyActive) {
+      hasPushedStateRef.current = false;
     }
   }, [activeChatId, isNewChatOpen, isNewGroupOpen, isGroupInfoOpen, isSettingsOpen]);
 

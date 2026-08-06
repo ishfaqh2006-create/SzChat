@@ -170,13 +170,27 @@ export function initSocketHandler(httpServer: HTTPServer) {
       }
     });
 
-    socket.on('message:delivered', async ({ messageId, chatId }: { messageId: string; chatId: string }) => {
+    socket.on('message:delivered', async ({ messageId, chatId, senderId }: { messageId: string; chatId: string; senderId?: string }) => {
       try {
-        const updated = await db.updateMessageStatus(messageId, 'delivered');
-        if (updated) {
-          io.to(`chat:${chatId}`).emit('message:updated', updated);
-          io.to(`user:${updated.senderId}`).emit('message:updated', updated);
+        const updatePayload = { id: messageId, chatId, status: 'delivered' };
+
+        // 1. INSTANT 0ms WebSocket emission to chat room AND direct user rooms
+        io.to(`chat:${chatId}`).emit('message:updated', updatePayload);
+        if (senderId) {
+          io.to(`user:${senderId}`).emit('message:updated', updatePayload);
         }
+        db.getChatForUser(chatId, userId).then((chat) => {
+          if (chat && chat.members) {
+            for (const m of chat.members) {
+              if (m.userId !== userId) {
+                io.to(`user:${m.userId}`).emit('message:updated', updatePayload);
+              }
+            }
+          }
+        }).catch(() => {});
+
+        // 2. Background DB save
+        db.updateMessageStatus(messageId, 'delivered').catch(() => {});
       } catch (err) {
         console.error('Delivered error:', err);
       }

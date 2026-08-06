@@ -140,10 +140,10 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           <button
             type="button"
             onClick={() => setShowPicker(!showPicker)}
-            className="p-1.5 sm:p-2.5 text-zinc-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors flex-shrink-0"
+            className="p-1.5 sm:p-2 text-zinc-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors flex-shrink-0"
             title="Emojis & Stickers"
           >
-            <Smile className="w-5 h-5" />
+            <Smile className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
 
           <input
@@ -157,24 +157,24 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="p-1.5 sm:p-2.5 text-zinc-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors flex-shrink-0"
+            className="p-1.5 sm:p-2 text-zinc-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors flex-shrink-0"
             title="Attach file or image"
           >
-            <Paperclip className="w-5 h-5" />
+            <Paperclip className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
 
           {/* View Once Photo Toggle */}
           <button
             type="button"
             onClick={() => setIsViewOnceEnabled(!isViewOnceEnabled)}
-            className={`p-1.5 sm:p-2.5 rounded-xl transition-colors flex items-center space-x-1 flex-shrink-0 ${
+            className={`p-1.5 sm:p-2 rounded-xl transition-colors flex items-center space-x-0.5 sm:space-x-1 flex-shrink-0 ${
               isViewOnceEnabled
                 ? 'bg-emerald-500/20 text-emerald-500 font-semibold'
                 : 'text-zinc-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
             }`}
             title="Toggle View Once Photo"
           >
-            <Eye className="w-5 h-5" />
+            <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
             {isViewOnceEnabled && <span className="text-[10px] uppercase font-bold">1x</span>}
           </button>
 
@@ -191,13 +191,13 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             value={content}
             onChange={handleTextChange}
             placeholder={isViewOnceEnabled ? 'Send View Once photo...' : 'Type a message...'}
-            className="flex-1 min-w-0 px-3 sm:px-4 py-2 sm:py-2.5 bg-zinc-100 dark:bg-zinc-800/80 border border-transparent focus:border-emerald-500/50 rounded-xl text-xs sm:text-sm focus:outline-none dark:text-white placeholder-zinc-400 transition-all"
+            className="flex-1 min-w-0 px-2.5 sm:px-4 py-2 sm:py-2.5 bg-zinc-100 dark:bg-zinc-800/80 border border-transparent focus:border-emerald-500/50 rounded-xl text-xs sm:text-sm focus:outline-none dark:text-white placeholder-zinc-400 transition-all"
           />
 
           {content.trim() ? (
             <button
               type="submit"
-              className="p-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl shadow-lg shadow-emerald-600/20 transition-all flex-shrink-0"
+              className="p-2 sm:p-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl shadow-lg shadow-emerald-600/20 transition-all flex-shrink-0"
             >
               <Send className="w-4 h-4" />
             </button>
@@ -205,7 +205,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             <button
               type="button"
               onClick={() => setIsRecordingVoice(true)}
-              className="p-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-lg shadow-emerald-600/20 transition-all flex-shrink-0"
+              className="p-2 sm:p-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-lg shadow-emerald-600/20 transition-all flex-shrink-0"
               title="Record voice note"
             >
               <Mic className="w-4 h-4" />

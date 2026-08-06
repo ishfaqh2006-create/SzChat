@@ -53,12 +53,23 @@ export class WebRTCClient {
     };
 
     this.peerConnection.ontrack = (event) => {
-      this.remoteStream = event.streams[0];
-      if (this.remoteAudioElement) {
+      console.log('WebRTC ontrack received:', event.track?.kind, event.streams?.length);
+      if (event.streams && event.streams[0]) {
+        this.remoteStream = event.streams[0];
+      } else {
+        if (!this.remoteStream) {
+          this.remoteStream = new MediaStream();
+        }
+        if (event.track) {
+          this.remoteStream.addTrack(event.track);
+        }
+      }
+
+      if (this.remoteAudioElement && this.remoteStream) {
         this.remoteAudioElement.srcObject = this.remoteStream;
         this.remoteAudioElement.play().catch((e) => console.warn('Audio play error:', e));
       }
-      if (this.onTrack) {
+      if (this.onTrack && this.remoteStream) {
         this.onTrack(this.remoteStream);
       }
     };
