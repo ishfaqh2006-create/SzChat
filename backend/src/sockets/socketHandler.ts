@@ -111,6 +111,7 @@ export function initSocketHandler(httpServer: HTTPServer) {
     }, callback) => {
       try {
         const senderUser = await db.getUserById(userId);
+        const replyToMsg = data.replyToId ? await db.getMessageById(data.replyToId) : undefined;
         const now = new Date();
         const nowIso = now.toISOString();
 
@@ -125,6 +126,7 @@ export function initSocketHandler(httpServer: HTTPServer) {
           fileName: data.fileData?.fileName,
           fileSize: data.fileData?.fileSize,
           replyToId: data.replyToId,
+          replyTo: replyToMsg || undefined,
           isEdited: false,
           isDeletedForEveryone: false,
           isViewOnce: data.isViewOnce || false,

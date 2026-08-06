@@ -342,6 +342,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!activeChatId || !token || !user) return;
 
     const tempId = 'temp_' + Date.now();
+    const replyToMsg = replyToId ? messages.find(m => m.id === replyToId) : undefined;
     const optimisticMsg: Message = {
       id: tempId,
       chatId: activeChatId,
@@ -353,6 +354,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       fileName: fileData?.fileName,
       fileSize: fileData?.fileSize,
       replyToId,
+      replyTo: replyToMsg,
       isEdited: false,
       isDeletedForEveryone: false,
       isViewOnce,

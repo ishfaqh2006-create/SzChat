@@ -758,6 +758,17 @@ class Database {
     return formatMessage(updated);
   }
 
+  async getMessageById(id: string): Promise<Message | null> {
+    const msg = await prisma.message.findUnique({
+      where: { id },
+      include: {
+        sender: true,
+        replyTo: { include: { sender: true } },
+      },
+    });
+    return msg ? formatMessage(msg) : null;
+  }
+
   async deleteMessageForMe(messageId: string, userId: string): Promise<void> {
     const msg = await prisma.message.findUnique({ where: { id: messageId } });
     if (msg) {

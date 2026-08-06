@@ -28,12 +28,14 @@ interface MessageItemProps {
 
 export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onForward, onEdit }) => {
   const { user } = useAuth();
-  const { deleteMessageForMe, deleteMessageForEveryone, openViewOnceMedia, reactToMessage } = useChat();
+  const { messages, deleteMessageForMe, deleteMessageForEveryone, openViewOnceMedia, reactToMessage } = useChat();
 
   const [showMenu, setShowMenu] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [viewOncePreviewUrl, setViewOncePreviewUrl] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const replyTarget = message.replyTo || (message.replyToId ? messages.find(m => m.id === message.replyToId) : undefined);
 
   const toggleReaction = (emoji: string) => {
     reactToMessage(message.id, emoji);
@@ -84,7 +86,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
   const displayReactions = message.reactions || [];
 
   return (
-    <div className="w-full flex flex-col my-1">
+    <div id={`msg-${message.id}`} className="w-full flex flex-col my-1 transition-all">
       <div
         className={`relative group max-w-[85%] sm:max-w-[70%] ${
           isMine ? 'ml-auto text-right' : 'mr-auto text-left'
@@ -98,14 +100,42 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
         )}
 
         {/* Reply Bubble Reference */}
-        {message.replyTo && (
-          <div className="mb-1 p-2 bg-black/5 dark:bg-white/5 border-l-4 border-emerald-500 rounded-r-lg text-xs">
+        {replyTarget && (
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              const el = document.getElementById(`msg-${replyTarget.id}`);
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.classList.add('ring-2', 'ring-emerald-500');
+                setTimeout(() => el.classList.remove('ring-2', 'ring-emerald-500'), 1500);
+              }
+            }}
+            className="mb-1 p-2 bg-black/10 dark:bg-white/10 border-l-4 border-emerald-500 rounded-r-lg text-xs cursor-pointer hover:bg-black/15 dark:hover:bg-white/15 transition-colors"
+            title="Click to jump to replied message"
+          >
             <span className="font-semibold text-emerald-700 dark:text-emerald-400 block text-[10px]">
-              {message.replyTo.sender?.displayName || 'User'}
+              {replyTarget.sender?.displayName || replyTarget.sender?.username || 'User'}
             </span>
-            <span className="truncate block opacity-80 line-clamp-1">{message.replyTo.content}</span>
+            <span className="truncate block opacity-80 line-clamp-1">
+              {replyTarget.content || (replyTarget.type === 'image' ? '📷 Photo' : replyTarget.type === 'audio' ? '🎵 Voice Message' : '📁 Attachment')}
+            </span>
           </div>
         )}
+
+        {/* Quick Reply Hover Button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onReply(message);
+          }}
+          className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-1 bg-white dark:bg-zinc-800 text-zinc-500 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-full shadow-md transition-all ${
+            isMine ? '-left-8' : '-right-8'
+          }`}
+          title="Reply to message"
+        >
+          <Reply className="w-3.5 h-3.5" />
+        </button>
 
         {/* Main Message Container */}
         <div
