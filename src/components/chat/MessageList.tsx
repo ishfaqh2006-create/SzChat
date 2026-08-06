@@ -21,9 +21,17 @@ export const MessageList: React.FC<MessageListProps> = ({
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  // Auto-scroll to bottom on new message
+  // Auto-scroll to bottom when chat switches or new message is sent/received
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: 'instant', block: 'end' });
+    }
+  }, [activeChat?.id]);
+
+  useEffect(() => {
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
   }, [messages.length]);
 
   // Handle infinite scroll up
@@ -45,7 +53,7 @@ export const MessageList: React.FC<MessageListProps> = ({
     <div
       ref={containerRef}
       onScroll={handleScroll}
-      className="flex-1 overflow-y-auto p-4 space-y-2 relative"
+      className="flex-1 min-h-0 overflow-y-auto p-4 space-y-2 relative"
       style={{
         backgroundImage: activeChat?.wallpaper
           ? `url(${activeChat.wallpaper})`

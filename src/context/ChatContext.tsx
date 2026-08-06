@@ -385,7 +385,20 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const reactToMessage = (messageId: string, emoji: string) => {
-    if (!token || !activeChatId) return;
+    if (!token || !activeChatId || !user) return;
+    setMessages(prev =>
+      prev.map(m => {
+        if (m.id === messageId) {
+          const current = m.reactions || [];
+          const exists = current.some(r => r.emoji === emoji && r.userId === user.id);
+          const updated = exists
+            ? current.filter(r => !(r.emoji === emoji && r.userId === user.id))
+            : [...current, { emoji, userId: user.id }];
+          return { ...m, reactions: updated };
+        }
+        return m;
+      })
+    );
     const socket = getSocket(token);
     socket?.emit('message:react', { messageId, chatId: activeChatId, emoji });
   };

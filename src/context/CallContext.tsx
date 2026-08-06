@@ -13,6 +13,7 @@ interface CallContextType {
   endCall: () => void;
   toggleMute: () => void;
   toggleSpeaker: () => void;
+  toggleMinimizeCall: () => void;
   callLogs: CallLog[];
   refreshCallLogs: () => Promise<void>;
 }
@@ -28,6 +29,7 @@ const initialCallState: CallState = {
   duration: 0,
   isMuted: false,
   isSpeakerOn: false,
+  isMinimized: false,
 };
 
 const CallContext = createContext<CallContextType | undefined>(undefined);
@@ -314,6 +316,10 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const toggleMinimizeCall = () => {
+    setCallState(prev => ({ ...prev, isMinimized: !prev.isMinimized }));
+  };
+
   return (
     <CallContext.Provider
       value={{
@@ -324,6 +330,7 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
         endCall,
         toggleMute,
         toggleSpeaker,
+        toggleMinimizeCall,
         callLogs,
         refreshCallLogs,
       }}

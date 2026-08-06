@@ -88,6 +88,7 @@ export interface CallState {
   duration: number;
   isMuted: boolean;
   isSpeakerOn: boolean;
+  isMinimized?: boolean;
 }
 
 export interface CallLog {

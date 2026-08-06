@@ -146,10 +146,33 @@ export class WebRTCClient {
     }
   }
 
-  toggleSpeaker(isSpeakerOn: boolean) {
-    if (this.remoteAudioElement) {
-      this.remoteAudioElement.volume = isSpeakerOn ? 1.0 : 0.7;
+  async toggleSpeaker(isSpeakerOn: boolean) {
+    if (!this.remoteAudioElement) return;
+
+    try {
+      if ('setSinkId' in this.remoteAudioElement && typeof (this.remoteAudioElement as any).setSinkId === 'function') {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const audioOutputs = devices.filter((device) => device.kind === 'audiooutput');
+
+        if (audioOutputs.length > 0) {
+          if (isSpeakerOn) {
+            const speakerDevice = audioOutputs.find((d) =>
+              d.label.toLowerCase().includes('speaker') || d.label.toLowerCase().includes('loudspeaker')
+            ) || audioOutputs[0];
+            await (this.remoteAudioElement as any).setSinkId(speakerDevice.deviceId);
+          } else {
+            const earpieceDevice = audioOutputs.find((d) =>
+              d.label.toLowerCase().includes('earpiece') || d.label.toLowerCase().includes('receiver') || d.label.toLowerCase().includes('phone')
+            );
+            await (this.remoteAudioElement as any).setSinkId(earpieceDevice ? earpieceDevice.deviceId : '');
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Audio output device selection error:', err);
     }
+
+    this.remoteAudioElement.volume = isSpeakerOn ? 1.0 : 0.8;
   }
 
   cleanup() {

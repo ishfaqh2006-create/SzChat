@@ -109,7 +109,21 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
 
         {/* Main Message Container */}
         <div
-          className={`relative px-3 py-2 rounded-2xl shadow-sm text-sm break-words transition-all max-w-full ${
+          onDoubleClick={(e) => {
+            e.stopPropagation();
+            setShowMenu(prev => !prev);
+          }}
+          onTouchStart={() => {
+            // Touch long press support for mobile
+            if ((window as any)._msgTouchTimer) clearTimeout((window as any)._msgTouchTimer);
+            (window as any)._msgTouchTimer = setTimeout(() => {
+              setShowMenu(true);
+            }, 500);
+          }}
+          onTouchEnd={() => {
+            if ((window as any)._msgTouchTimer) clearTimeout((window as any)._msgTouchTimer);
+          }}
+          className={`relative px-3 py-2 rounded-2xl shadow-sm text-sm break-words transition-all max-w-full cursor-pointer select-none ${
             isMine
               ? 'bg-emerald-600 text-white rounded-br-none'
               : 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200/80 dark:border-zinc-700/80 rounded-bl-none'
@@ -222,31 +236,23 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
               </div>
             </>
           )}
-
-          {/* Action Trigger Button on Hover or Touch */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowMenu(!showMenu);
-            }}
-            className={`absolute top-1 right-1 p-1 rounded-lg opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity z-20 ${
-              isMine
-                ? 'bg-emerald-700/80 text-white hover:bg-emerald-800'
-                : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200'
-            }`}
-          >
-            <MoreHorizontal className="w-3.5 h-3.5" />
-          </button>
         </div>
 
         {/* Context Menu Dropdown */}
         {showMenu && (
-          <div
-            className={`absolute z-50 top-10 ${
-              isMine ? 'right-0' : 'left-0'
-            } w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl py-1 text-xs`}
-          >
+          <>
+            <div
+              className="fixed inset-0 z-40 bg-transparent"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMenu(false);
+              }}
+            />
+            <div
+              className={`absolute z-50 top-10 ${
+                isMine ? 'right-0' : 'left-0'
+              } w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl py-1 text-xs animate-scaleIn`}
+            >
             {/* Quick Emoji Reaction Bar */}
             <div className="px-2 py-1.5 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-around">
               {['👍', '❤️', '😂', '😮', '😢', '🔥'].map((emoji) => (
@@ -327,6 +333,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
               </button>
             )}
           </div>
+        </>
         )}
       </div>
 

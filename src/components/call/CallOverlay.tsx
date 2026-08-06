@@ -9,11 +9,14 @@ import {
   Volume2,
   VolumeX,
   PhoneIncoming,
-  PhoneOutgoing,
+  Minimize2,
+  Maximize2,
+  ArrowLeft,
+  Headphones,
 } from 'lucide-react';
 
 export const CallOverlay: React.FC = () => {
-  const { callState, acceptCall, rejectCall, endCall, toggleMute, toggleSpeaker } = useCall();
+  const { callState, acceptCall, rejectCall, endCall, toggleMute, toggleSpeaker, toggleMinimizeCall } = useCall();
 
   if (!callState.status) return null;
 
@@ -25,7 +28,7 @@ export const CallOverlay: React.FC = () => {
 
   const peerName = callState.peerUser?.displayName || 'Unknown User';
 
-  // Incoming Banner Mode
+  // 1. Incoming Call Top Banner Mode
   if (callState.status === 'incoming') {
     return (
       <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-md p-4 bg-zinc-900/95 text-white rounded-2xl shadow-2xl border border-zinc-700 backdrop-blur-md animate-bounce">
@@ -63,35 +66,119 @@ export const CallOverlay: React.FC = () => {
     );
   }
 
-  // Active / Dialing Call Modal
+  // 2. Minimized Floating Top Call Bar Mode (WhatsApp style)
+  if (callState.isMinimized) {
+    return (
+      <div className="fixed top-0 left-0 right-0 z-50 bg-emerald-700/95 text-white px-4 py-2.5 shadow-xl backdrop-blur-md flex items-center justify-between border-b border-emerald-600/50 animate-slideDown">
+        <div
+          onClick={toggleMinimizeCall}
+          className="flex items-center space-x-3 cursor-pointer flex-1 min-w-0"
+        >
+          <div className="relative">
+            <Avatar src={callState.peerUser?.avatarUrl} name={peerName} size="sm" />
+            <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full animate-ping" />
+          </div>
+          <div className="truncate">
+            <div className="flex items-center space-x-2">
+              <span className="font-bold text-xs truncate">{peerName}</span>
+              <span className="text-[10px] bg-emerald-800/60 px-2 py-0.5 rounded-full font-mono font-semibold">
+                {callState.status === 'connected' ? formatTimer(callState.duration) : 'Calling...'}
+              </span>
+            </div>
+            <p className="text-[10px] text-emerald-100/80">Tap to return to call screen</p>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-2 ml-3">
+          <button
+            onClick={toggleMute}
+            className={`p-2 rounded-full transition-colors ${
+              callState.isMuted ? 'bg-red-600 text-white' : 'bg-emerald-800/60 text-white hover:bg-emerald-800'
+            }`}
+            title={callState.isMuted ? 'Unmute' : 'Mute'}
+          >
+            {callState.isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+          </button>
+
+          <button
+            onClick={toggleSpeaker}
+            className={`p-2 rounded-full transition-colors ${
+              callState.isSpeakerOn ? 'bg-white text-emerald-700' : 'bg-emerald-800/60 text-white hover:bg-emerald-800'
+            }`}
+            title="Speaker / Earpiece"
+          >
+            {callState.isSpeakerOn ? <Volume2 className="w-4 h-4" /> : <Headphones className="w-4 h-4" />}
+          </button>
+
+          <button
+            onClick={endCall}
+            className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-full transition-transform hover:scale-105"
+            title="End Call"
+          >
+            <PhoneOff className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={toggleMinimizeCall}
+            className="p-2 bg-emerald-800/60 hover:bg-emerald-800 text-white rounded-full"
+            title="Expand Call View"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Full-Screen Call Screen View
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/90 backdrop-blur-md animate-fadeIn">
-      <div className="w-full max-w-sm bg-zinc-900 text-white rounded-3xl shadow-2xl border border-zinc-800 p-8 text-center flex flex-col items-center justify-between min-h-[420px]">
-        {/* Peer Info */}
-        <div className="space-y-4">
-          <div className="relative inline-block">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/95 backdrop-blur-xl animate-fadeIn">
+      <div className="w-full max-w-sm bg-zinc-900/90 text-white rounded-3xl shadow-2xl border border-zinc-800 p-6 text-center flex flex-col items-center justify-between min-h-[460px] relative overflow-hidden">
+        {/* Top Header: Return to Chat Button */}
+        <div className="w-full flex items-center justify-between z-10 mb-2">
+          <button
+            onClick={toggleMinimizeCall}
+            className="flex items-center space-x-1.5 px-3 py-1.5 bg-zinc-800/80 hover:bg-zinc-700/80 rounded-xl text-xs font-semibold text-zinc-300 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Return to Chat</span>
+          </button>
+
+          <button
+            onClick={toggleMinimizeCall}
+            className="p-2 bg-zinc-800/80 hover:bg-zinc-700/80 rounded-xl text-zinc-300 transition-colors"
+            title="Minimize Call"
+          >
+            <Minimize2 className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Peer Info with Ambient Pulse Effect */}
+        <div className="space-y-4 my-auto z-10">
+          <div className="relative inline-block my-2">
+            <div className="absolute inset-0 rounded-full bg-emerald-500/20 animate-ping scale-125" />
             <Avatar
               src={callState.peerUser?.avatarUrl}
               name={peerName}
               size="xl"
-              className="w-24 h-24 text-2xl mx-auto shadow-2xl ring-4 ring-emerald-500/20"
+              className="w-28 h-28 text-3xl mx-auto shadow-2xl ring-4 ring-emerald-500/30 relative z-10"
             />
-            <div className="absolute -bottom-1 -right-1 p-2 bg-emerald-600 rounded-full border-2 border-zinc-900">
+            <div className="absolute -bottom-1 -right-1 p-2.5 bg-emerald-600 rounded-full border-2 border-zinc-900 shadow-lg z-20">
               <PhoneCall className="w-4 h-4 text-white" />
             </div>
           </div>
 
           <div>
-            <h2 className="text-xl font-bold text-white">{peerName}</h2>
-            <p className="text-xs text-zinc-400 mt-1 font-mono">
+            <h2 className="text-2xl font-bold text-white tracking-wide">{peerName}</h2>
+            <p className="text-xs text-zinc-400 mt-1.5 font-mono">
               {callState.status === 'dialing' ? (
-                <span className="text-emerald-400 animate-pulse">Calling...</span>
+                <span className="text-emerald-400 animate-pulse font-semibold">Calling...</span>
               ) : callState.status === 'connected' ? (
-                <span className="text-emerald-400 font-bold text-sm">
+                <span className="text-emerald-400 font-bold text-base tracking-widest">
                   {formatTimer(callState.duration)}
                 </span>
               ) : (
-                <span className="capitalize">{callState.status}</span>
+                <span className="capitalize text-zinc-400">{callState.status}</span>
               )}
             </p>
           </div>
@@ -99,12 +186,12 @@ export const CallOverlay: React.FC = () => {
 
         {/* Audio controls */}
         {callState.status === 'connected' && (
-          <div className="flex items-center space-x-6 my-6">
+          <div className="flex items-center space-x-6 my-6 z-10">
             <button
               onClick={toggleMute}
-              className={`p-4 rounded-2xl transition-all ${
+              className={`p-4 rounded-2xl transition-all shadow-lg ${
                 callState.isMuted
-                  ? 'bg-red-600/20 text-red-400 border border-red-500/30'
+                  ? 'bg-red-600 text-white border border-red-500'
                   : 'bg-zinc-800 text-zinc-200 hover:bg-zinc-700'
               }`}
               title={callState.isMuted ? 'Unmute Microphone' : 'Mute Microphone'}
@@ -114,23 +201,23 @@ export const CallOverlay: React.FC = () => {
 
             <button
               onClick={toggleSpeaker}
-              className={`p-4 rounded-2xl transition-all ${
+              className={`p-4 rounded-2xl transition-all shadow-lg ${
                 callState.isSpeakerOn
-                  ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30'
+                  ? 'bg-emerald-600 text-white border border-emerald-500'
                   : 'bg-zinc-800 text-zinc-200 hover:bg-zinc-700'
               }`}
-              title="Toggle Speaker"
+              title={callState.isSpeakerOn ? 'Loud Speaker active' : 'Ear Speaker active'}
             >
-              {callState.isSpeakerOn ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
+              {callState.isSpeakerOn ? <Volume2 className="w-6 h-6" /> : <Headphones className="w-6 h-6" />}
             </button>
           </div>
         )}
 
         {/* End Call Button */}
-        <div className="w-full pt-4">
+        <div className="w-full pt-2 z-10">
           <button
             onClick={endCall}
-            className="w-full py-3.5 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold rounded-2xl shadow-xl flex items-center justify-center space-x-2 transition-all hover:scale-105"
+            className="w-full py-4 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold rounded-2xl shadow-xl flex items-center justify-center space-x-2 transition-all hover:scale-[1.02]"
           >
             <PhoneOff className="w-5 h-5" />
             <span>End Call</span>
@@ -140,3 +227,4 @@ export const CallOverlay: React.FC = () => {
     </div>
   );
 };
+

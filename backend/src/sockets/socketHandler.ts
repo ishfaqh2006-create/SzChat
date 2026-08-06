@@ -219,6 +219,7 @@ export function initSocketHandler(httpServer: HTTPServer) {
     });
 
     socket.on('message:react', ({ messageId, chatId, emoji }: { messageId: string; chatId: string; emoji: string }) => {
+      db.addMessageReaction(messageId, emoji, userId);
       io.to(`chat:${chatId}`).emit('message:reaction', { messageId, chatId, emoji, userId });
       db.getChatForUser(chatId, userId).then((chat) => {
         if (chat && chat.members) {

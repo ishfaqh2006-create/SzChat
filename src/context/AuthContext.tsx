@@ -15,14 +15,26 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('szchat_token'));
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [user, setUser] = useState<User | null>(() => {
+    const cached = localStorage.getItem('szchat_user');
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(!user && !!token);
 
   useEffect(() => {
     async function checkAuth() {
       if (!token) {
         setIsLoading(false);
+        setUser(null);
+        localStorage.removeItem('szchat_user');
         return;
       }
 
@@ -34,6 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (res.ok) {
           const data = await res.json();
           setUser(data.user);
+          localStorage.setItem('szchat_user', JSON.stringify(data.user));
           getSocket(token); // Connect Socket.IO
         } else {
           logout();
@@ -61,6 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     localStorage.setItem('szchat_token', data.token);
+    localStorage.setItem('szchat_user', JSON.stringify(data.user));
     setToken(data.token);
     setUser(data.user);
     getSocket(data.token);
@@ -79,6 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     localStorage.setItem('szchat_token', data.token);
+    localStorage.setItem('szchat_user', JSON.stringify(data.user));
     setToken(data.token);
     setUser(data.user);
     getSocket(data.token);
@@ -86,6 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     localStorage.removeItem('szchat_token');
+    localStorage.removeItem('szchat_user');
     setToken(null);
     setUser(null);
     disconnectSocket();
@@ -108,6 +124,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     setUser(result.user);
+    localStorage.setItem('szchat_user', JSON.stringify(result.user));
   };
 
   return (

@@ -44,6 +44,7 @@ export interface Message {
   isViewOnce?: boolean;
   isViewed?: boolean;
   status?: 'sent' | 'delivered' | 'read';
+  reactions?: { emoji: string; userId: string }[];
   createdAt: string;
   updatedAt: string;
   sender?: User;
@@ -94,6 +95,18 @@ function formatUser(u: any): User {
   };
 }
 
+const messageReactions = new Map<string, { emoji: string; userId: string }[]>();
+
+export function addMessageReaction(messageId: string, emoji: string, userId: string) {
+  const current = messageReactions.get(messageId) || [];
+  const exists = current.some(r => r.emoji === emoji && r.userId === userId);
+  const updated = exists
+    ? current.filter(r => !(r.emoji === emoji && r.userId === userId))
+    : [...current, { emoji, userId }];
+  messageReactions.set(messageId, updated);
+  return updated;
+}
+
 function formatMessage(m: any): Message {
   return {
     id: m.id,
@@ -113,6 +126,7 @@ function formatMessage(m: any): Message {
     isViewOnce: m.isViewOnce || false,
     isViewed: m.isViewed || false,
     status: (m.status ? m.status.toLowerCase() : 'sent') as any,
+    reactions: messageReactions.get(m.id) || m.reactions || [],
     createdAt: m.createdAt instanceof Date ? m.createdAt.toISOString() : m.createdAt,
     updatedAt: m.updatedAt instanceof Date ? m.updatedAt.toISOString() : m.updatedAt,
     sender: m.sender ? formatUser(m.sender) : undefined,
@@ -792,6 +806,10 @@ class Database {
         data: { status: 'READ' },
       }),
     ]);
+  }
+
+  addMessageReaction(messageId: string, emoji: string, userId: string) {
+    return addMessageReaction(messageId, emoji, userId);
   }
 
   // --- Call Log Operations ---

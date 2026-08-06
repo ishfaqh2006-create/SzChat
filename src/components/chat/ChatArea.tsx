@@ -33,7 +33,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ onBackMobile, onOpenGroupInf
   }
 
   return (
-    <main className="flex-1 flex flex-col h-full w-full max-w-full bg-zinc-100 dark:bg-zinc-950 relative overflow-hidden overflow-x-hidden">
+    <main className="flex-1 min-h-0 flex flex-col h-full w-full max-w-full bg-zinc-100 dark:bg-zinc-950 relative overflow-hidden overflow-x-hidden">
       <ChatHeader
         onBackMobile={onBackMobile}
         onOpenGroupInfo={onOpenGroupInfo}
