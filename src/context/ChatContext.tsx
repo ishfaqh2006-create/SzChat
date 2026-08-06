@@ -276,11 +276,33 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
     };
 
+    const handleUserPresence = ({ userId: targetUserId, isOnline, lastSeen }: { userId: string; isOnline: boolean; lastSeen: string }) => {
+      setChats(prev =>
+        prev.map(c => ({
+          ...c,
+          members: c.members.map(m => {
+            if (m.userId === targetUserId && m.user) {
+              return {
+                ...m,
+                user: {
+                  ...m.user,
+                  isOnline,
+                  lastSeen,
+                },
+              };
+            }
+            return m;
+          }),
+        }))
+      );
+    };
+
     socket.on('message:new', handleNewMessage);
     socket.on('message:updated', handleMessageUpdated);
     socket.on('typing:update', handleTypingUpdate);
     socket.on('chat:read', handleChatRead);
     socket.on('message:reaction', handleMessageReaction);
+    socket.on('user:presence', handleUserPresence);
 
     return () => {
       socket.off('message:new', handleNewMessage);
@@ -288,6 +310,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       socket.off('typing:update', handleTypingUpdate);
       socket.off('chat:read', handleChatRead);
       socket.off('message:reaction', handleMessageReaction);
+      socket.off('user:presence', handleUserPresence);
     };
   }, [token, user, refreshChats]);
 

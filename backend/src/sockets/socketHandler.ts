@@ -56,21 +56,41 @@ export function initSocketHandler(httpServer: HTTPServer) {
     socket.join(`user:${userId}`);
 
     socket.on('typing:start', ({ chatId }: { chatId: string }) => {
-      socket.to(`chat:${chatId}`).emit('typing:update', {
+      const payload = {
         chatId,
         userId,
         displayName: socket.displayName!,
         isTyping: true,
-      });
+      };
+      socket.to(`chat:${chatId}`).emit('typing:update', payload);
+      db.getChatForUser(chatId, userId).then((chat) => {
+        if (chat && chat.members) {
+          for (const m of chat.members) {
+            if (m.userId !== userId) {
+              io.to(`user:${m.userId}`).emit('typing:update', payload);
+            }
+          }
+        }
+      }).catch(() => {});
     });
 
     socket.on('typing:stop', ({ chatId }: { chatId: string }) => {
-      socket.to(`chat:${chatId}`).emit('typing:update', {
+      const payload = {
         chatId,
         userId,
         displayName: socket.displayName!,
         isTyping: false,
-      });
+      };
+      socket.to(`chat:${chatId}`).emit('typing:update', payload);
+      db.getChatForUser(chatId, userId).then((chat) => {
+        if (chat && chat.members) {
+          for (const m of chat.members) {
+            if (m.userId !== userId) {
+              io.to(`user:${m.userId}`).emit('typing:update', payload);
+            }
+          }
+        }
+      }).catch(() => {});
     });
 
     socket.on('chat:join', ({ chatId }: { chatId: string }) => {

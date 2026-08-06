@@ -14,8 +14,8 @@ export function getSocket(token?: string): Socket | null {
     return null;
   }
 
-  // Reuse existing active socket if token matches and is connected
-  if (socket && currentToken === activeToken && (socket.connected || socket.active)) {
+  // Reuse existing socket instance if token matches and is not disconnected
+  if (socket && currentToken === activeToken && !socket.disconnected) {
     return socket;
   }
 
