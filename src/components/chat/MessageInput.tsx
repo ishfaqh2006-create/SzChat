@@ -180,6 +180,14 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
           <input
             type="text"
+            id="chat_message_content"
+            name="chat_message_content"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="sentences"
+            spellCheck={false}
+            data-form-type="other"
+            data-lpignore="true"
             value={content}
             onChange={handleTextChange}
             placeholder={isViewOnceEnabled ? 'Send View Once photo...' : 'Type a message...'}

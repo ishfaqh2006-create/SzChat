@@ -220,10 +220,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const handleMessageUpdated = (updatedMsg: Message) => {
-      setMessages(prev => prev.map(m => m.id === updatedMsg.id ? updatedMsg : m));
+      const normMsg: Message = {
+        ...updatedMsg,
+        status: (updatedMsg.status || 'sent').toLowerCase() as any,
+      };
+      setMessages(prev => prev.map(m => m.id === normMsg.id ? normMsg : m));
       setChats(prev => prev.map(c => {
-        if (c.id === updatedMsg.chatId && c.lastMessage?.id === updatedMsg.id) {
-          return { ...c, lastMessage: updatedMsg };
+        if (c.id === normMsg.chatId && c.lastMessage?.id === normMsg.id) {
+          return { ...c, lastMessage: normMsg };
         }
         return c;
       }));
@@ -255,6 +259,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const handleMessageReaction = ({ messageId, emoji, userId: rxUserId }: { messageId: string; chatId: string; emoji: string; userId: string }) => {
+      if (user && rxUserId === user.id) return;
+
       setMessages(prev =>
         prev.map(m => {
           if (m.id === messageId) {

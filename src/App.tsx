@@ -34,6 +34,33 @@ function MainApp() {
     }
   }, [isDarkMode]);
 
+  // Handle Hardware & Browser Back Button (popstate) to go 1 step back inside app
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (isNewChatOpen) {
+        setIsNewChatOpen(false);
+      } else if (isNewGroupOpen) {
+        setIsNewGroupOpen(false);
+      } else if (isGroupInfoOpen) {
+        setIsGroupInfoOpen(false);
+      } else if (isSettingsOpen) {
+        setIsSettingsOpen(false);
+      } else if (activeChatId) {
+        selectChat(null);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [isNewChatOpen, isNewGroupOpen, isGroupInfoOpen, isSettingsOpen, activeChatId, selectChat]);
+
+  // Push history state whenever active chat or modal changes
+  useEffect(() => {
+    if (activeChatId || isNewChatOpen || isNewGroupOpen || isGroupInfoOpen || isSettingsOpen) {
+      window.history.pushState({ szchat: true }, '');
+    }
+  }, [activeChatId, isNewChatOpen, isNewGroupOpen, isGroupInfoOpen, isSettingsOpen]);
+
   if (isLoading) {
     return (
       <div className="h-screen w-screen bg-zinc-900 flex items-center justify-center text-white text-sm font-semibold">
