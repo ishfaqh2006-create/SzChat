@@ -24,7 +24,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   const [showPicker, setShowPicker] = useState(false);
   const [isViewOnceEnabled, setIsViewOnceEnabled] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const textInputRef = useRef<HTMLInputElement | null>(null);
+  const textInputRef = useRef<HTMLTextAreaElement | null>(null);
 
   const [isReadOnly, setIsReadOnly] = useState(true);
 
@@ -194,26 +194,22 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             {isViewOnceEnabled && <span className="text-[10px] uppercase font-bold">1x</span>}
           </button>
 
-          <input
-            type="text"
-            inputMode="text"
-            readOnly={isReadOnly}
-            onFocus={() => setIsReadOnly(false)}
-            onTouchStart={() => setIsReadOnly(false)}
+          <textarea
+            rows={1}
             enterKeyHint="send"
             ref={textInputRef}
             id="chat_message_input"
-            name="chat_msg_text"
+            name="message_text"
             autoComplete="off"
             autoCorrect="off"
             autoCapitalize="sentences"
             spellCheck={false}
-            data-lpignore="true"
-            data-1p-ignore="true"
-            data-bwignore="true"
-            data-form-type="other"
             value={content}
             onChange={handleTextChange}
+            onFocus={() => {
+              window.scrollTo(0, 0);
+              document.body.scrollTop = 0;
+            }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -221,7 +217,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
               }
             }}
             placeholder={isViewOnceEnabled ? 'Send View Once photo...' : 'Type a message...'}
-            className="flex-1 min-w-0 px-2.5 sm:px-4 py-2 sm:py-2.5 bg-zinc-100 dark:bg-zinc-800/80 border border-transparent focus:border-emerald-500/50 rounded-xl text-xs sm:text-sm focus:outline-none dark:text-white placeholder-zinc-400 transition-all"
+            className="flex-1 min-w-0 px-2.5 sm:px-4 py-2 sm:py-2.5 bg-zinc-100 dark:bg-zinc-800/80 border border-transparent focus:border-emerald-500/50 rounded-xl text-xs sm:text-sm focus:outline-none dark:text-white placeholder-zinc-400 transition-all resize-none max-h-24 overflow-y-auto leading-normal"
           />
 
           {content.trim() ? (
