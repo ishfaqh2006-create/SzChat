@@ -641,6 +641,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!token) return;
     setChats(prev => prev.filter(c => c.id !== chatId));
     if (activeChatId === chatId) setActiveChatId(null);
+    indexedDBService.deleteCachedChat(chatId).catch(() => {});
     await fetch(`/api/chats/${chatId}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },

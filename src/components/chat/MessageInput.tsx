@@ -24,6 +24,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   const [showPicker, setShowPicker] = useState(false);
   const [isViewOnceEnabled, setIsViewOnceEnabled] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const textInputRef = useRef<HTMLInputElement | null>(null);
 
   // Sync content if editing
   React.useEffect(() => {
@@ -34,18 +35,24 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!content.trim()) return;
-
-    if (editingMessage) {
-      await editMessage(editingMessage.id, content.trim());
-      onClearEdit();
-    } else {
-      await sendMessage(content.trim(), 'text', undefined, replyingTo?.id);
-      if (replyingTo) onClearReply();
-    }
+    const toSend = content.trim();
+    if (!toSend) return;
 
     setContent('');
     sendTyping(false);
+
+    // Keep focus on input on mobile send so typing bar stays pinned above keyboard
+    if (textInputRef.current) {
+      textInputRef.current.focus({ preventScroll: true });
+    }
+
+    if (editingMessage) {
+      await editMessage(editingMessage.id, toSend);
+      onClearEdit();
+    } else {
+      await sendMessage(toSend, 'text', undefined, replyingTo?.id);
+      if (replyingTo) onClearReply();
+    }
   };
 
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -91,7 +98,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 p-3 relative">
+    <div className="bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 p-3 relative flex-shrink-0 z-20 w-full sticky bottom-0">
       {/* Replying Bar */}
       {replyingTo && (
         <div className="mb-2 p-2 px-3 bg-zinc-100 dark:bg-zinc-800/80 border-l-4 border-emerald-500 rounded-r-xl flex items-center justify-between text-xs">
@@ -180,6 +187,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
           <input
             type="search"
+            ref={textInputRef}
             id="sz_chat_msg_input_field"
             name="sz_chat_msg_input_field"
             autoComplete="off"

@@ -43,8 +43,32 @@ export class IndexedDBService {
 
     const tx = this.db.transaction('chats', 'readwrite');
     const store = tx.objectStore('chats');
+    store.clear(); // Wipe deleted/stale chats from local cache
     for (const chat of chats) {
       store.put(chat);
+    }
+  }
+
+  async deleteCachedChat(chatId: string): Promise<void> {
+    await this.init();
+    if (!this.db) return;
+
+    try {
+      const tx = this.db.transaction(['chats', 'messages'], 'readwrite');
+      tx.objectStore('chats').delete(chatId);
+
+      const msgStore = tx.objectStore('messages');
+      const index = msgStore.index('chatId');
+      const request = index.openCursor(IDBKeyRange.only(chatId));
+      request.onsuccess = (e: any) => {
+        const cursor = e.target.result;
+        if (cursor) {
+          cursor.delete();
+          cursor.continue();
+        }
+      };
+    } catch (err) {
+      console.warn('Failed to delete cached chat:', err);
     }
   }
 

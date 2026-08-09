@@ -20,34 +20,35 @@ export const MessageList: React.FC<MessageListProps> = ({
   const { messages, loadMoreMessages, activeChat } = useChat();
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const isInitialLoadRef = useRef(true);
   const prevChatIdRef = useRef<string | null>(null);
+  const prevMsgLengthRef = useRef<number>(0);
 
-  // Instant scroll to bottom when switching chats or loading initial messages
-  useEffect(() => {
-    if (activeChat?.id !== prevChatIdRef.current) {
+  // Synchronous layout effect before paint to position at bottom instantly
+  React.useLayoutEffect(() => {
+    const isChatChanged = activeChat?.id !== prevChatIdRef.current;
+    if (isChatChanged) {
       prevChatIdRef.current = activeChat?.id || null;
-      isInitialLoadRef.current = true;
+      prevMsgLengthRef.current = messages.length;
     }
 
-    if (containerRef.current) {
-      if (isInitialLoadRef.current && messages.length > 0) {
+    if (containerRef.current && messages.length > 0) {
+      // If switching chat or initial load, set scrollTop to scrollHeight synchronously
+      if (isChatChanged || prevMsgLengthRef.current === 0) {
         containerRef.current.scrollTop = containerRef.current.scrollHeight;
-        // Also scroll bottomRef instantly
         if (bottomRef.current) {
           bottomRef.current.scrollIntoView({ behavior: 'instant', block: 'end' });
         }
-        isInitialLoadRef.current = false;
+      } else if (messages.length > prevMsgLengthRef.current) {
+        // New incoming/outgoing message: smooth scroll ONLY if user is already near bottom
+        const el = containerRef.current;
+        const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+        if (isNearBottom && bottomRef.current) {
+          bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
       }
     }
+    prevMsgLengthRef.current = messages.length;
   }, [activeChat?.id, messages]);
-
-  // Smooth scroll to bottom ONLY for new messages added while actively viewing
-  useEffect(() => {
-    if (!isInitialLoadRef.current && bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    }
-  }, [messages.length]);
 
   // Handle infinite scroll up
   const handleScroll = () => {
