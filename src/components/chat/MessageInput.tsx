@@ -191,7 +191,8 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           </button>
 
           <input
-            type="search"
+            type="text"
+            enterKeyHint="send"
             ref={textInputRef}
             id="sz_chat_msg_input_field"
             name="sz_chat_msg_input_field"
