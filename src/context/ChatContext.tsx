@@ -149,6 +149,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const socket = getSocket(token);
     if (!socket) return;
 
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
+
     const handleNewMessage = (msg: Message) => {
       const currentActiveId = activeChatIdRef.current;
 
@@ -156,6 +160,18 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (msg.senderId !== user.id) {
         socket.emit('message:delivered', { messageId: msg.id, chatId: msg.chatId, senderId: msg.senderId });
         soundEffects.playMessageReceived();
+
+        // Device Push Notification if app is backgrounded or chat inactive
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+          if (document.hidden || msg.chatId !== currentActiveId) {
+            const senderName = msg.sender?.displayName || msg.sender?.username || 'Contact';
+            const snippet = msg.content || (msg.type === 'image' ? '📷 Sent a photo' : msg.type === 'audio' ? '🎵 Sent a voice message' : '📁 Sent an attachment');
+            new Notification(`SzChat — ${senderName}`, {
+              body: snippet,
+              icon: msg.sender?.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=szchat_app_logo',
+            });
+          }
+        }
       } else {
         soundEffects.playMessageSent();
       }

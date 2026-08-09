@@ -139,6 +139,35 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <span>{isMutedSound ? 'Muted (Silent)' : 'Sound Enabled'}</span>
               </button>
             </div>
+
+            <div className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200/50 dark:border-zinc-800">
+              <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                4-Digit Security PIN Lock
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  const currentPin = localStorage.getItem('szchat_security_pin');
+                  if (currentPin) {
+                    if (confirm('Remove 4-digit Security PIN lock?')) {
+                      localStorage.removeItem('szchat_security_pin');
+                      alert('PIN lock removed');
+                    }
+                  } else {
+                    const newPin = prompt('Enter a 4-digit PIN for App Lock:');
+                    if (newPin && /^\d{4}$/.test(newPin.trim())) {
+                      localStorage.setItem('szchat_security_pin', newPin.trim());
+                      alert('Security PIN lock enabled!');
+                    } else if (newPin !== null) {
+                      alert('PIN must be exactly 4 digits');
+                    }
+                  }
+                }}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-colors"
+              >
+                {localStorage.getItem('szchat_security_pin') ? 'PIN Active (Remove)' : 'Set 4-Digit PIN'}
+              </button>
+            </div>
           </div>
 
           <button

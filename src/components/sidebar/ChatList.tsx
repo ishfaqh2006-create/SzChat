@@ -19,7 +19,10 @@ export const ChatList: React.FC = () => {
     const q = searchQuery.toLowerCase();
     const chatNameMatch = chat.name?.toLowerCase().includes(q);
     const lastMsgMatch = chat.lastMessage?.content.toLowerCase().includes(q);
-    return chatNameMatch || lastMsgMatch;
+    const memberMatch = chat.members?.some(m =>
+      m.user?.displayName.toLowerCase().includes(q) || m.user?.username.toLowerCase().includes(q)
+    );
+    return chatNameMatch || lastMsgMatch || memberMatch;
   });
 
   const pinnedChats = filteredChats.filter(c => c.pinned);

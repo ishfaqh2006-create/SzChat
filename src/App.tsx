@@ -10,6 +10,7 @@ import { NewGroupModal } from './components/modals/NewGroupModal.js';
 import { GroupInfoModal } from './components/modals/GroupInfoModal.js';
 import { SettingsModal } from './components/modals/SettingsModal.js';
 import { CallOverlay } from './components/call/CallOverlay.js';
+import { PinLockModal } from './components/modals/PinLockModal.js';
 
 function MainApp() {
   const { user, isLoading } = useAuth();
@@ -19,6 +20,9 @@ function MainApp() {
   const [isNewGroupOpen, setIsNewGroupOpen] = useState(false);
   const [isGroupInfoOpen, setIsGroupInfoOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isAppLocked, setIsAppLocked] = useState(() => {
+    return !!localStorage.getItem('szchat_security_pin');
+  });
 
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return localStorage.getItem('szchat_theme') === 'dark' || true;
@@ -79,6 +83,11 @@ function MainApp() {
 
   if (!user) {
     return <AuthModal />;
+  }
+
+  const storedPin = localStorage.getItem('szchat_security_pin');
+  if (isAppLocked && storedPin) {
+    return <PinLockModal storedPin={storedPin} onUnlock={() => setIsAppLocked(false)} />;
   }
 
   return (
