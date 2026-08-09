@@ -85,6 +85,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
     }
   };
 
+  const handleChangeVisibility = async (userId: string, visibilityMode: string) => {
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/visibility`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          'X-Admin-Secret-Key': adminSecretKey.trim(),
+        },
+        body: JSON.stringify({ visibilityMode }),
+      });
+
+      if (res.ok) {
+        setUsersList((prev) =>
+          prev.map((u) => (u.id === userId ? { ...u, visibilityMode } : u))
+        );
+      }
+    } catch {
+      alert('Failed to update visibility');
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-fadeIn text-white">
       <div className="w-full max-w-2xl bg-zinc-900 rounded-2xl shadow-2xl border border-emerald-500/30 overflow-hidden flex flex-col max-h-[90vh]">
@@ -200,12 +222,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               </button>
             </div>
 
-            {/* User Visibility & Priority Ordering */}
+            {/* User Visibility & Granular Controls */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-bold text-white flex items-center space-x-2">
                   <Layers className="w-4 h-4 text-indigo-400" />
-                  <span>User Directory Visibility & Ordered Display</span>
+                  <span>User Visibility & Security Access Controls</span>
                 </h4>
                 <span className="text-[10px] text-zinc-400 font-mono">{usersList.length} Users Registered</span>
               </div>
@@ -225,6 +247,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                     </div>
 
                     <div className="flex items-center space-x-2">
+                      <select
+                        value={u.visibilityMode || 'EVERYONE'}
+                        onChange={(e) => handleChangeVisibility(u.id, e.target.value)}
+                        className="bg-zinc-900 border border-zinc-700 text-zinc-200 text-[11px] rounded-lg px-2 py-1 outline-none font-semibold cursor-pointer"
+                      >
+                        <option value="EVERYONE">🟢 Visible to Everyone</option>
+                        <option value="NOONE">🔒 Hidden from Everyone</option>
+                        <option value="FRIENDS_ONLY">👥 Friends Only</option>
+                        <option value="BLOCKED">🛑 Block / Suspend Account</option>
+                      </select>
+
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${u.isOnline ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-700 text-zinc-400'}`}>
                         {u.isOnline ? 'Online' : 'Offline'}
                       </span>

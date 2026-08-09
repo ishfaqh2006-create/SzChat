@@ -51,7 +51,9 @@ router.get('/stats', authMiddleware, superAdminMiddleware, async (_req, res) => 
   }
 });
 
-// 2. User Directory & Visibility Ordering
+const userVisibilityMap: Record<string, string> = {};
+
+// 2. User Directory & Visibility Modes
 router.get('/users', authMiddleware, superAdminMiddleware, async (_req, res) => {
   try {
     const users = await prisma.user.findMany({
@@ -67,9 +69,33 @@ router.get('/users', authMiddleware, superAdminMiddleware, async (_req, res) => 
         createdAt: true,
       },
     });
-    res.json({ users });
+
+    const formatted = users.map((u) => ({
+      ...u,
+      visibilityMode: userVisibilityMap[u.id] || 'EVERYONE',
+    }));
+
+    res.json({ users: formatted });
   } catch (err: any) {
     res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+// Update per-user visibility mode (EVERYONE, NOONE, FRIENDS_ONLY, BLOCKED)
+router.post('/users/:userId/visibility', authMiddleware, superAdminMiddleware, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { visibilityMode } = req.body;
+    userVisibilityMap[userId] = visibilityMode || 'EVERYONE';
+
+    res.json({
+      status: 'ok',
+      userId,
+      visibilityMode: userVisibilityMap[userId],
+      message: `Visibility mode updated to ${visibilityMode}`,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to update user visibility' });
   }
 });
 

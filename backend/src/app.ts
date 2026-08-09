@@ -32,6 +32,20 @@ export function createExpressApp() {
   app.use('/api/messages', messageRoutes);
   app.use('/api/admin', adminRoutes);
 
+  // Return 404 Not Found for any direct browser visits to /admin
+  app.get('/admin', (_req, res) => {
+    res.status(404).send(`
+      <!DOCTYPE html>
+      <html>
+        <head><title>404 Not Found</title></head>
+        <body style="font-family: sans-serif; text-align: center; padding: 50px; background: #09090b; color: #a1a1aa;">
+          <h1 style="color: #ef4444;">404 Not Found</h1>
+          <p>The requested URL /admin was not found on this server.</p>
+        </body>
+      </html>
+    `);
+  });
+
   // Calls history
   app.get('/api/calls/history', authMiddleware, async (req: AuthRequest, res) => {
     try {
