@@ -13,6 +13,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [usersList, setUsersList] = useState<any[]>([]);
+  const [userPriorityOrder, setUserPriorityOrder] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -227,38 +228,65 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-bold text-white flex items-center space-x-2">
                   <Layers className="w-4 h-4 text-indigo-400" />
-                  <span>User Visibility & Security Access Controls</span>
+                  <span>User Directory Visibility, Priority Order & Security Bans</span>
                 </h4>
                 <span className="text-[10px] text-zinc-400 font-mono">{usersList.length} Users Registered</span>
               </div>
 
-              <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+              <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
                 {usersList.map((u, idx) => (
                   <div
                     key={u.id}
-                    className="p-3 bg-zinc-800/80 rounded-xl border border-zinc-700/60 flex items-center justify-between text-xs"
+                    className={`p-3 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${
+                      u.visibilityMode === 'BLOCKED'
+                        ? 'bg-red-950/30 border-red-800/50'
+                        : 'bg-zinc-800/80 border-zinc-700/60'
+                    }`}
                   >
-                    <div className="flex items-center space-x-3">
-                      <span className="w-5 text-center font-bold text-zinc-500 font-mono">#{idx + 1}</span>
-                      <div>
-                        <span className="font-bold text-white block">{u.displayName}</span>
-                        <span className="text-[10px] text-zinc-400 font-mono">@{u.username} • {u.email || 'No email'}</span>
+                    <div className="flex items-center space-x-3 min-w-0">
+                      <span className="w-6 h-6 bg-zinc-700/60 rounded-full flex items-center justify-center font-bold text-emerald-400 font-mono text-[11px]">
+                        #{idx + 1}
+                      </span>
+                      <div className="min-w-0">
+                        <span className="font-bold text-white block truncate">{u.displayName}</span>
+                        <span className="text-[10px] text-zinc-400 font-mono truncate block">
+                          @{u.username} • {u.email || 'No email'}
+                        </span>
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 flex-wrap gap-y-2">
+                      {/* Custom Display Priority Order Input */}
+                      <div className="flex items-center space-x-1 bg-zinc-900 px-2 py-1 rounded-lg border border-zinc-700">
+                        <span className="text-[10px] text-zinc-400 font-semibold">Rank:</span>
+                        <input
+                          type="number"
+                          defaultValue={idx + 1}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 1;
+                            setUserPriorityOrder((prev) => ({ ...prev, [u.id]: val }));
+                          }}
+                          className="w-10 bg-transparent text-center text-xs font-bold text-emerald-400 outline-none"
+                        />
+                      </div>
+
+                      {/* Visibility Mode Dropdown */}
                       <select
                         value={u.visibilityMode || 'EVERYONE'}
                         onChange={(e) => handleChangeVisibility(u.id, e.target.value)}
-                        className="bg-zinc-900 border border-zinc-700 text-zinc-200 text-[11px] rounded-lg px-2 py-1 outline-none font-semibold cursor-pointer"
+                        className="bg-zinc-900 border border-zinc-700 text-zinc-200 text-[11px] rounded-lg px-2 py-1.5 outline-none font-semibold cursor-pointer"
                       >
-                        <option value="EVERYONE">🟢 Visible to Everyone</option>
-                        <option value="NOONE">🔒 Hidden from Everyone</option>
-                        <option value="FRIENDS_ONLY">👥 Friends Only</option>
-                        <option value="BLOCKED">🛑 Block / Suspend Account</option>
+                        <option value="EVERYONE">🟢 Visible for Everyone</option>
+                        <option value="NOONE">🔒 Visible to No One (Hidden)</option>
+                        <option value="FRIENDS_ONLY">👥 Visible to Friends Only</option>
+                        <option value="BLOCKED">🛑 Block / Suspend User</option>
                       </select>
 
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${u.isOnline ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-700 text-zinc-400'}`}>
+                      <span
+                        className={`px-2 py-1 rounded-full text-[10px] font-bold ${
+                          u.isOnline ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-700 text-zinc-400'
+                        }`}
+                      >
                         {u.isOnline ? 'Online' : 'Offline'}
                       </span>
                     </div>
