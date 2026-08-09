@@ -11,6 +11,10 @@ let lockoutUntil = 0;
 
 // 1. Request 6-Digit OTP (Server-Enforced Zero-Trust Protection)
 router.post('/request-otp', authMiddleware, (req: AuthRequest, res: Response) => {
+  if (req.user?.username?.toLowerCase() !== 'ishfaq') {
+    return res.status(403).json({ error: 'Access denied: Only Master Owner account Ishfaq can request Admin access.' });
+  }
+
   if (Date.now() < lockoutUntil) {
     const minutesLeft = Math.ceil((lockoutUntil - Date.now()) / (60 * 1000));
     return res.status(429).json({

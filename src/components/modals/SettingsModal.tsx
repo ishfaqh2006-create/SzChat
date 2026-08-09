@@ -171,7 +171,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </button>
             </div>
 
-            {onOpenAdmin && (
+            {onOpenAdmin && (user?.username?.toLowerCase() === 'ishfaq' || user?.email?.toLowerCase().includes('ishfaq')) && (
               <div className="flex items-center justify-between p-3 bg-emerald-500/10 dark:bg-emerald-950/30 rounded-xl border border-emerald-500/30">
                 <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 flex items-center space-x-1.5">
                   <ShieldCheck className="w-4 h-4 text-emerald-500" />
