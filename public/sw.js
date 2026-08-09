@@ -1,4 +1,4 @@
-const CACHE_NAME = 'szchat-v2-cachebust';
+const CACHE_NAME = 'szchat-v3-purge-all';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -8,10 +8,14 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
+        cacheNames.map((name) => caches.delete(name))
       );
+    }).then(() => {
+      return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+        for (const client of clientList) {
+          client.postMessage({ type: 'RELOAD_PAGE' });
+        }
+      });
     })
   );
   self.clients.claim();
@@ -19,15 +23,7 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
-  // Always fetch fresh network content for HTML pages to ensure updates reflect immediately
-  if (event.request.mode === 'navigate' || event.request.headers.get('accept')?.includes('text/html')) {
-    event.respondWith(
-      fetch(event.request).catch(() => caches.match(event.request))
-    );
-    return;
-  }
-
-  // Network first for other assets
+  // Always fetch fresh network content for HTML and JS/CSS
   event.respondWith(
     fetch(event.request).catch(() => caches.match(event.request))
   );
