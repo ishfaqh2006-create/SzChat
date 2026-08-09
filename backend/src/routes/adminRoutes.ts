@@ -51,7 +51,12 @@ router.get('/stats', authMiddleware, superAdminMiddleware, async (_req, res) => 
   }
 });
 
-const userVisibilityMap: Record<string, string> = {};
+interface UserVisibilityConfig {
+  mode: string;
+  allowedUserIds: string[];
+}
+
+const userVisibilityMap: Record<string, UserVisibilityConfig> = {};
 
 // 2. User Directory & Visibility Modes
 router.get('/users', authMiddleware, superAdminMiddleware, async (_req, res) => {
@@ -72,7 +77,8 @@ router.get('/users', authMiddleware, superAdminMiddleware, async (_req, res) => 
 
     const formatted = users.map((u) => ({
       ...u,
-      visibilityMode: userVisibilityMap[u.id] || 'EVERYONE',
+      visibilityMode: userVisibilityMap[u.id]?.mode || 'EVERYONE',
+      allowedUserIds: userVisibilityMap[u.id]?.allowedUserIds || [],
     }));
 
     res.json({ users: formatted });
@@ -81,17 +87,22 @@ router.get('/users', authMiddleware, superAdminMiddleware, async (_req, res) => 
   }
 });
 
-// Update per-user visibility mode (EVERYONE, NOONE, FRIENDS_ONLY, BLOCKED)
+// Update per-user visibility mode & custom allowed users list
 router.post('/users/:userId/visibility', authMiddleware, superAdminMiddleware, async (req, res) => {
   try {
     const { userId } = req.params;
-    const { visibilityMode } = req.body;
-    userVisibilityMap[userId] = visibilityMode || 'EVERYONE';
+    const { visibilityMode, allowedUserIds } = req.body;
+    
+    userVisibilityMap[userId] = {
+      mode: visibilityMode || 'EVERYONE',
+      allowedUserIds: Array.isArray(allowedUserIds) ? allowedUserIds : [],
+    };
 
     res.json({
       status: 'ok',
       userId,
-      visibilityMode: userVisibilityMap[userId],
+      visibilityMode: userVisibilityMap[userId].mode,
+      allowedUserIds: userVisibilityMap[userId].allowedUserIds,
       message: `Visibility mode updated to ${visibilityMode}`,
     });
   } catch (err: any) {

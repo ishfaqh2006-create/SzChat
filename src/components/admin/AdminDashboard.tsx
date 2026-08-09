@@ -86,8 +86,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
     }
   };
 
-  const handleChangeVisibility = async (userId: string, visibilityMode: string) => {
+  const [activeAllowedUsersTarget, setActiveAllowedUsersTarget] = useState<any | null>(null);
+
+  const handleChangeVisibility = async (userId: string, visibilityMode: string, allowedUserIds?: string[]) => {
     try {
+      const targetUser = usersList.find(u => u.id === userId);
+      const updatedAllowed = allowedUserIds !== undefined ? allowedUserIds : (targetUser?.allowedUserIds || []);
+
       const res = await fetch(`/api/admin/users/${userId}/visibility`, {
         method: 'POST',
         headers: {
@@ -95,12 +100,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
           Authorization: `Bearer ${token}`,
           'X-Admin-Secret-Key': adminSecretKey.trim(),
         },
-        body: JSON.stringify({ visibilityMode }),
+        body: JSON.stringify({ visibilityMode, allowedUserIds: updatedAllowed }),
       });
 
       if (res.ok) {
         setUsersList((prev) =>
-          prev.map((u) => (u.id === userId ? { ...u, visibilityMode } : u))
+          prev.map((u) => (u.id === userId ? { ...u, visibilityMode, allowedUserIds: updatedAllowed } : u))
         );
       }
     } catch {
@@ -278,9 +283,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                       >
                         <option value="EVERYONE">🟢 Visible for Everyone</option>
                         <option value="NOONE">🔒 Visible to No One (Hidden)</option>
-                        <option value="FRIENDS_ONLY">👥 Visible to Friends Only</option>
+                        <option value="FRIENDS_ONLY">👥 Visible to Selected Friends Only</option>
                         <option value="BLOCKED">🛑 Block / Suspend User</option>
                       </select>
+
+                      {u.visibilityMode === 'FRIENDS_ONLY' && (
+                        <button
+                          onClick={() => setActiveAllowedUsersTarget(u)}
+                          className="px-2.5 py-1 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 rounded-lg text-[11px] font-semibold transition-colors"
+                        >
+                          Configure Allowed Users ({u.allowedUserIds?.length || 0})
+                        </button>
+                      )}
 
                       <span
                         className={`px-2 py-1 rounded-full text-[10px] font-bold ${
@@ -297,6 +311,65 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
           </div>
         )}
       </div>
+
+      {/* Custom Allowed Users Picker Modal */}
+      {activeAllowedUsersTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fadeIn">
+          <div className="w-full max-w-md bg-zinc-900 rounded-2xl border border-zinc-800 p-4 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+              <div>
+                <h4 className="font-bold text-sm text-white">Allowed Users for @{activeAllowedUsersTarget.username}</h4>
+                <p className="text-[11px] text-zinc-400">Select which specific users can see and message this person</p>
+              </div>
+              <button onClick={() => setActiveAllowedUsersTarget(null)} className="text-zinc-400 hover:text-white p-1">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
+              {usersList
+                .filter((candidate) => candidate.id !== activeAllowedUsersTarget.id)
+                .map((candidate) => {
+                  const isChecked = (activeAllowedUsersTarget.allowedUserIds || []).includes(candidate.id);
+                  return (
+                    <div
+                      key={candidate.id}
+                      onClick={() => {
+                        const current = activeAllowedUsersTarget.allowedUserIds || [];
+                        const updated = isChecked
+                          ? current.filter((id: string) => id !== candidate.id)
+                          : [...current, candidate.id];
+                        setActiveAllowedUsersTarget({ ...activeAllowedUsersTarget, allowedUserIds: updated });
+                        handleChangeVisibility(activeAllowedUsersTarget.id, 'FRIENDS_ONLY', updated);
+                      }}
+                      className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer text-xs ${
+                        isChecked ? 'bg-emerald-600/20 border-emerald-500/50 text-white' : 'bg-zinc-800/60 border-zinc-700/50 text-zinc-400 hover:bg-zinc-800'
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <span className="font-bold block truncate text-white">{candidate.displayName}</span>
+                        <span className="text-[10px] font-mono text-zinc-400 block truncate">@{candidate.username}</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        readOnly
+                        className="w-4 h-4 accent-emerald-500 cursor-pointer"
+                      />
+                    </div>
+                  );
+                })}
+            </div>
+
+            <button
+              onClick={() => setActiveAllowedUsersTarget(null)}
+              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-lg transition-colors"
+            >
+              Done / Save Configuration
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
