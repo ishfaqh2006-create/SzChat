@@ -6,6 +6,8 @@ import messageRoutes from './routes/messageRoutes.js';
 import { authMiddleware, AuthRequest } from './middleware/auth.js';
 import { db } from './db/db.js';
 
+import adminRoutes from './routes/adminRoutes.js';
+
 export function createExpressApp() {
   const app = express();
 
@@ -28,6 +30,7 @@ export function createExpressApp() {
   app.use('/api/users', userRoutes);
   app.use('/api/chats', chatRoutes);
   app.use('/api/messages', messageRoutes);
+  app.use('/api/admin', adminRoutes);
 
   // Calls history
   app.get('/api/calls/history', authMiddleware, async (req: AuthRequest, res) => {

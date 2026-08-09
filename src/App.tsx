@@ -12,6 +12,7 @@ import { SettingsModal } from './components/modals/SettingsModal.js';
 import { CallOverlay } from './components/call/CallOverlay.js';
 import { PinLockModal } from './components/modals/PinLockModal.js';
 import { NotificationToast } from './components/common/NotificationToast.js';
+import { AdminDashboard } from './components/admin/AdminDashboard.js';
 
 function MainApp() {
   const { user, isLoading } = useAuth();
@@ -21,6 +22,7 @@ function MainApp() {
   const [isNewGroupOpen, setIsNewGroupOpen] = useState(false);
   const [isGroupInfoOpen, setIsGroupInfoOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isAppLocked, setIsAppLocked] = useState(() => {
     return !!localStorage.getItem('szchat_security_pin');
   });
@@ -118,8 +120,10 @@ function MainApp() {
           onClose={() => setIsSettingsOpen(false)}
           isDarkMode={isDarkMode}
           onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
+          onOpenAdmin={() => setIsAdminOpen(true)}
         />
       )}
+      {isAdminOpen && <AdminDashboard onClose={() => setIsAdminOpen(false)} />}
 
       {/* Floating Real-Time Notification Toast */}
       <NotificationToast

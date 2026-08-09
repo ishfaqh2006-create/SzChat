@@ -3,6 +3,7 @@ import { useChat } from '../../context/ChatContext.js';
 import { ChatHeader } from './ChatHeader.js';
 import { MessageList } from './MessageList.js';
 import { MessageInput } from './MessageInput.js';
+import { ForwardModal } from '../modals/ForwardModal.js';
 import { Message } from '../../types/index.js';
 import { MessageSquare, Search, X } from 'lucide-react';
 import { useVisualViewport } from '../../lib/useVisualViewport.js';
@@ -17,6 +18,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ onBackMobile, onOpenGroupInf
   const { viewportHeight } = useVisualViewport();
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+  const [forwardingMessage, setForwardingMessage] = useState<Message | null>(null);
   const [showInChatSearch, setShowInChatSearch] = useState(false);
   const [inChatSearchQuery, setInChatSearchQuery] = useState('');
 
@@ -37,10 +39,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ onBackMobile, onOpenGroupInf
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   return (
-    <main
-      className="flex-1 min-h-0 flex flex-col w-full max-w-full bg-zinc-100 dark:bg-zinc-950 relative overflow-hidden"
-      style={isMobile ? { height: `${viewportHeight}px`, maxHeight: `${viewportHeight}px` } : { height: '100%' }}
-    >
+    <main className="flex-1 min-h-0 h-full max-h-full flex flex-col w-full max-w-full bg-zinc-100 dark:bg-zinc-950 relative overflow-hidden">
       <div className="sticky top-0 z-30 flex-shrink-0 w-full">
         <ChatHeader
           onBackMobile={onBackMobile}
@@ -75,10 +74,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ onBackMobile, onOpenGroupInf
 
       <MessageList
         onReply={(msg) => setReplyingTo(msg)}
-        onForward={(msg) => {
-          navigator.clipboard.writeText(msg.content);
-          alert('Message copied for forwarding!');
-        }}
+        onForward={(msg) => setForwardingMessage(msg)}
         onEdit={(msg) => setEditingMessage(msg)}
         inChatSearchQuery={inChatSearchQuery}
       />
@@ -91,6 +87,11 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ onBackMobile, onOpenGroupInf
           onClearEdit={() => setEditingMessage(null)}
         />
       </div>
+
+      {/* Multi-Contact Message Forwarding Modal */}
+      {forwardingMessage && (
+        <ForwardModal message={forwardingMessage} onClose={() => setForwardingMessage(null)} />
+      )}
     </main>
   );
 };

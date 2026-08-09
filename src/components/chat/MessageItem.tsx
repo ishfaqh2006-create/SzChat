@@ -17,6 +17,7 @@ import {
   Share2,
   Eye,
   EyeOff,
+  Star,
 } from 'lucide-react';
 
 interface MessageItemProps {
@@ -42,6 +43,42 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
   const toggleReaction = (emoji: string) => {
     reactToMessage(message.id, emoji);
     setShowMenu(false);
+  };
+
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const touchStartXRef = useRef(0);
+  const touchStartYRef = useRef(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX;
+    touchStartYRef.current = e.touches[0].clientY;
+
+    if ((window as any)._msgTouchTimer) clearTimeout((window as any)._msgTouchTimer);
+    (window as any)._msgTouchTimer = setTimeout(() => {
+      setShowMenu(true);
+    }, 500);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const deltaX = e.touches[0].clientX - touchStartXRef.current;
+    const deltaY = Math.abs(e.touches[0].clientY - touchStartYRef.current);
+
+    if (Math.abs(deltaX) > 10 || deltaY > 10) {
+      if ((window as any)._msgTouchTimer) clearTimeout((window as any)._msgTouchTimer);
+    }
+
+    if (deltaX > 0 && deltaX < 100 && deltaX > deltaY) {
+      setSwipeOffset(deltaX);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if ((window as any)._msgTouchTimer) clearTimeout((window as any)._msgTouchTimer);
+
+    if (swipeOffset > 45) {
+      onReply(message);
+    }
+    setSwipeOffset(0);
   };
 
   const isMine = message.senderId === user?.id;
@@ -89,7 +126,17 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
   const displayReactions = message.reactions || [];
 
   return (
-    <div id={`msg-${message.id}`} className="w-full flex flex-col my-1 transition-all">
+    <div
+      id={`msg-${message.id}`}
+      className="w-full flex flex-col my-1 transition-all"
+      style={{
+        transform: `translateX(${swipeOffset}px)`,
+        transition: swipeOffset === 0 ? 'transform 0.2s ease-out' : 'none',
+      }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       <div
         className={`relative group max-w-[85%] sm:max-w-[70%] ${
           isMine ? 'ml-auto text-right' : 'mr-auto text-left'
@@ -145,16 +192,6 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
           onDoubleClick={(e) => {
             e.stopPropagation();
             setShowMenu(prev => !prev);
-          }}
-          onTouchStart={() => {
-            // Touch long press support for mobile
-            if ((window as any)._msgTouchTimer) clearTimeout((window as any)._msgTouchTimer);
-            (window as any)._msgTouchTimer = setTimeout(() => {
-              setShowMenu(true);
-            }, 500);
-          }}
-          onTouchEnd={() => {
-            if ((window as any)._msgTouchTimer) clearTimeout((window as any)._msgTouchTimer);
           }}
           className={`relative px-3 py-2 rounded-2xl shadow-sm text-sm break-words transition-all max-w-full cursor-pointer select-none ${
             isMine
@@ -333,6 +370,26 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
             >
               <Copy className="w-3.5 h-3.5" />
               <span>Copy</span>
+            </button>
+
+            <button
+              onClick={() => {
+                try {
+                  const existing = JSON.parse(localStorage.getItem('szchat_starred_messages') || '[]');
+                  if (!existing.some((m: any) => m.id === message.id)) {
+                    existing.push(message);
+                    localStorage.setItem('szchat_starred_messages', JSON.stringify(existing));
+                    alert('Message starred!');
+                  } else {
+                    alert('Message is already starred');
+                  }
+                } catch (e) {}
+                setShowMenu(false);
+              }}
+              className="w-full px-3 py-1.5 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center space-x-2 text-amber-500 font-medium"
+            >
+              <Star className="w-3.5 h-3.5 fill-amber-500" />
+              <span>Star Message</span>
             </button>
 
             {isMine && !message.isDeletedForEveryone && (

@@ -2,18 +2,20 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext.js';
 import { Avatar } from '../common/Avatar.js';
 import { soundEffects } from '../../lib/sound.js';
-import { Settings, X, Moon, Sun, LogOut, User, Sparkles, Check, Volume2, VolumeX } from 'lucide-react';
+import { Settings, X, Moon, Sun, LogOut, User, Sparkles, Check, Volume2, VolumeX, ShieldCheck } from 'lucide-react';
 
 interface SettingsModalProps {
   onClose: () => void;
   isDarkMode: boolean;
   onToggleDarkMode: () => void;
+  onOpenAdmin?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   isDarkMode,
   onToggleDarkMode,
+  onOpenAdmin,
 }) => {
   const { user, updateProfile, logout } = useAuth();
   const [displayName, setDisplayName] = useState(user?.displayName || '');
@@ -168,6 +170,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 {localStorage.getItem('szchat_security_pin') ? 'PIN Active (Remove)' : 'Set 4-Digit PIN'}
               </button>
             </div>
+
+            {onOpenAdmin && (
+              <div className="flex items-center justify-between p-3 bg-emerald-500/10 dark:bg-emerald-950/30 rounded-xl border border-emerald-500/30">
+                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 flex items-center space-x-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                  <span>Super-Admin Panel</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onOpenAdmin();
+                  }}
+                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-colors"
+                >
+                  Open Panel
+                </button>
+              </div>
+            )}
           </div>
 
           <button

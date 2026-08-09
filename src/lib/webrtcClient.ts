@@ -178,7 +178,8 @@ export class WebRTCClient {
 
   async toggleSpeaker(isSpeakerOn: boolean) {
     if (this.remoteAudioElement) {
-      this.remoteAudioElement.volume = isSpeakerOn ? 1.0 : 0.4;
+      // Earpiece mode uses 0.18 volume level so sound is comfortable when held to ear
+      this.remoteAudioElement.volume = isSpeakerOn ? 1.0 : 0.18;
       try {
         if ('setSinkId' in this.remoteAudioElement && typeof (this.remoteAudioElement as any).setSinkId === 'function') {
           const devices = await navigator.mediaDevices.enumerateDevices();
