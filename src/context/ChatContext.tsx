@@ -179,7 +179,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setMessages(cached);
         }
 
-        const res = await fetch(`/api/messages/${activeChatId}`, {
+        const res = await fetch(`/api/chats/${activeChatId}/messages?limit=50`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
