@@ -18,6 +18,21 @@ const deduplicateMessages = (msgs: Message[]): Message[] => {
   return result;
 };
 
+const sortChats = (chats: Chat[]): Chat[] => {
+  return [...chats].sort((a, b) => {
+    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+    const timeA = a.lastMessage
+      ? new Date(a.lastMessage.createdAt).getTime()
+      : new Date(a.updatedAt || a.createdAt).getTime();
+    const timeB = b.lastMessage
+      ? new Date(b.lastMessage.createdAt).getTime()
+      : new Date(b.updatedAt || b.createdAt).getTime();
+    const validB = isNaN(timeB) ? 0 : timeB;
+    const validA = isNaN(timeA) ? 0 : timeA;
+    return validB - validA;
+  });
+};
+
 interface ChatContextType {
   chats: Chat[];
   activeChat: Chat | null;
@@ -145,7 +160,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const cached = await indexedDBService.getCachedChats();
       if (cached.length > 0 && chats.length === 0) {
-        setChats(cached);
+        setChats(sortChats(cached));
       }
 
       const res = await fetch('/api/chats', {
@@ -153,8 +168,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       if (res.ok) {
         const data = await res.json();
-        setChats(data.chats);
-        indexedDBService.cacheChats(data.chats);
+        const sorted = sortChats(data.chats);
+        setChats(sorted);
+        indexedDBService.cacheChats(sorted);
       }
     } catch (err) {
       console.error('Error fetching chats:', err);
@@ -263,7 +279,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return prev;
         }
 
-        return prev.map(c => {
+        const updated = prev.map(c => {
           if (c.id === msg.chatId) {
             const isCurrentActive = c.id === currentActiveId;
             const newUnread = isCurrentActive || msg.senderId === user.id ? 0 : (c.unreadCount || 0) + 1;
@@ -275,12 +291,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
           }
           return c;
-        }).sort((a, b) => {
-          if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-          const timeA = a.lastMessage ? new Date(a.lastMessage.createdAt).getTime() : new Date(a.createdAt).getTime();
-          const timeB = b.lastMessage ? new Date(b.lastMessage.createdAt).getTime() : new Date(b.createdAt).getTime();
-          return timeB - timeA;
         });
+        return sortChats(updated);
       });
     };
 
@@ -471,6 +483,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     setMessages(prev => [...prev, optimisticMsg]);
+    setChats(prev => {
+      const updated = prev.map(c =>
+        c.id === activeChatId ? { ...c, lastMessage: optimisticMsg, updatedAt: optimisticMsg.createdAt } : c
+      );
+      return sortChats(updated);
+    });
     soundEffects.playMessageSent();
 
     const socket = getSocket(token);
@@ -488,8 +506,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
               return prev.map(m => (m.id === tempId ? res.message : m));
             });
 
-            // Update chat lastMessage locally
-            setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, lastMessage: res.message, updatedAt: res.message.createdAt } : c));
+            // Update chat lastMessage locally & re-sort
+            setChats(prev => {
+              const updated = prev.map(c =>
+                c.id === activeChatId ? { ...c, lastMessage: res.message, updatedAt: res.message.createdAt } : c
+              );
+              return sortChats(updated);
+            });
           }
         }
       );

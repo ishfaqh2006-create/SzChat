@@ -610,15 +610,16 @@ class Database {
       },
     });
 
-    prisma.chat.update({
-      where: { id: chatId },
-      data: { updatedAt: createdAt },
-    }).catch(() => {});
-
-    prisma.chatMember.updateMany({
-      where: { chatId, userId: { not: senderId } },
-      data: { unreadCount: { increment: 1 } },
-    }).catch(() => {});
+    await Promise.all([
+      prisma.chat.update({
+        where: { id: chatId },
+        data: { updatedAt: createdAt },
+      }).catch(() => {}),
+      prisma.chatMember.updateMany({
+        where: { chatId, userId: { not: senderId } },
+        data: { unreadCount: { increment: 1 } },
+      }).catch(() => {}),
+    ]);
 
     return formatMessage(newMessage);
   }
