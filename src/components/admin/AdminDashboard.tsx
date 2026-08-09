@@ -151,16 +151,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
 
             {!otpSent ? (
               <form onSubmit={handleRequestOtp} className="space-y-3">
-                <div className="bg-zinc-800/80 p-3 rounded-xl border border-zinc-700">
-                  <label className="text-[10px] font-bold uppercase text-zinc-400 block mb-1 text-left">Authorized Admin Phone</label>
-                  <input
-                    type="text"
-                    required
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    placeholder="Enter phone number..."
-                    className="w-full bg-transparent text-xs outline-none text-white font-mono font-bold"
-                  />
+                <div className="bg-zinc-800/80 p-3.5 rounded-xl border border-emerald-500/30 text-left">
+                  <span className="text-[10px] font-bold uppercase text-emerald-400 block mb-1">
+                    Server-Locked Authorized Admin Phone
+                  </span>
+                  <div className="flex items-center space-x-2 text-white font-mono font-bold text-xs">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <span>+91 6005547858 (Verified Master Owner)</span>
+                  </div>
                 </div>
 
                 {error && <p className="text-xs text-red-400 font-semibold">{error}</p>}
@@ -170,7 +168,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                   disabled={loading}
                   className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 font-bold rounded-xl text-xs transition-all shadow-lg"
                 >
-                  {loading ? 'Sending OTP Code...' : 'Send 6-Digit OTP to 6005547858'}
+                  {loading ? 'Sending Security OTP...' : 'Send 6-Digit OTP to +91 6005547858'}
                 </button>
               </form>
             ) : (

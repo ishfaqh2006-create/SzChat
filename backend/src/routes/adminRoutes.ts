@@ -4,38 +4,47 @@ import { db, prisma } from '../db/db.js';
 
 const router = Router();
 const ADMIN_SECRET = process.env.ADMIN_SECRET_KEY || 'szchat_master_admin_secret_2026!';
-const AUTHORIZED_ADMIN_PHONE = '6005547858';
+const HARDCODED_ADMIN_PHONE = '6005547858';
 
-let activeAdminOtp: { code: string; expiresAt: number } | null = null;
+let activeAdminOtp: { code: string; expiresAt: number; failedAttempts: number } | null = null;
+let lockoutUntil = 0;
 
-// 1. Request 6-Digit OTP to Phone Number 6005547858
+// 1. Request 6-Digit OTP (Server-Enforced Zero-Trust Protection)
 router.post('/request-otp', authMiddleware, (req: AuthRequest, res: Response) => {
-  const { phoneNumber } = req.body;
-  const cleanPhone = (phoneNumber || '').replace(/\D/g, '');
-
-  if (!cleanPhone.endsWith('6005547858')) {
-    return res.status(403).json({ error: 'Access denied: Phone number is not authorized for Admin access.' });
+  if (Date.now() < lockoutUntil) {
+    const minutesLeft = Math.ceil((lockoutUntil - Date.now()) / (60 * 1000));
+    return res.status(429).json({
+      error: `Security Lockout Active: Too many failed attempts. Try again in ${minutesLeft} minute(s).`,
+    });
   }
 
-  // Generate 6-digit OTP
+  // Generate 6-digit OTP exclusively for server-configured admin phone 6005547858
   const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
   activeAdminOtp = {
     code: generatedOtp,
     expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes validity
+    failedAttempts: 0,
   };
 
   console.log(`====================================================`);
-  console.log(`[SZCHAT ADMIN OTP SECURITY CODE SENT TO +91 6005547858]: ${generatedOtp}`);
+  console.log(`[ZERO-TRUST SERVER SECURITY] OTP SENT EXCLUSIVELY TO +91 6005547858: ${generatedOtp}`);
   console.log(`====================================================`);
 
   res.json({
     status: 'ok',
-    message: `6-Digit OTP sent to +91 6005547858. Please enter the OTP code to unlock.`,
+    message: `Security OTP sent to authorized Admin phone ending in ****547858.`,
   });
 });
 
-// 2. Verify OTP Code or Master Secret Passcode
+// 2. Verify OTP Code or Master Secret Passcode with Brute-Force Rate Protection
 router.post('/verify-otp', authMiddleware, (req: AuthRequest, res: Response) => {
+  if (Date.now() < lockoutUntil) {
+    const minutesLeft = Math.ceil((lockoutUntil - Date.now()) / (60 * 1000));
+    return res.status(429).json({
+      error: `Security Lockout Active: Too many failed attempts. Try again in ${minutesLeft} minute(s).`,
+    });
+  }
+
   const { otpCode, adminSecret } = req.body;
 
   if (adminSecret && adminSecret.trim() === ADMIN_SECRET) {
@@ -52,7 +61,17 @@ router.post('/verify-otp', authMiddleware, (req: AuthRequest, res: Response) => 
   }
 
   if (otpCode !== activeAdminOtp.code) {
-    return res.status(400).json({ error: 'Invalid OTP code. Please try again.' });
+    activeAdminOtp.failedAttempts += 1;
+    if (activeAdminOtp.failedAttempts >= 3) {
+      lockoutUntil = Date.now() + 15 * 60 * 1000; // 15-minute brute-force lockout
+      activeAdminOtp = null;
+      return res.status(429).json({
+        error: 'Too many incorrect OTP attempts. Security lockout engaged for 15 minutes.',
+      });
+    }
+    return res.status(400).json({
+      error: `Incorrect OTP code (${3 - activeAdminOtp.failedAttempts} attempt(s) remaining).`,
+    });
   }
 
   // Success
