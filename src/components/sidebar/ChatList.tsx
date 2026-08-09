@@ -2,10 +2,10 @@ import React from 'react';
 import { useChat } from '../../context/ChatContext.js';
 import { useAuth } from '../../context/AuthContext.js';
 import { Avatar } from '../common/Avatar.js';
-import { Pin, Archive, Check, CheckCheck, Users, Image as ImageIcon, Mic, FileText } from 'lucide-react';
+import { Pin, Archive, Check, CheckCheck, Users, Image as ImageIcon, Mic, FileText, Trash2 } from 'lucide-react';
 
 export const ChatList: React.FC = () => {
-  const { chats, activeChatId, selectChat, searchQuery, activeTab, togglePinChat, toggleArchiveChat } = useChat();
+  const { chats, activeChatId, selectChat, searchQuery, activeTab, togglePinChat, toggleArchiveChat, deleteChat } = useChat();
   const { user } = useAuth();
 
   const filteredChats = chats.filter(chat => {
@@ -128,6 +128,18 @@ export const ChatList: React.FC = () => {
             className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg text-zinc-500"
           >
             <Archive className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (confirm(`Delete conversation with ${chat.name || 'Chat'}?`)) {
+                deleteChat(chat.id);
+              }
+            }}
+            title="Delete Chat"
+            className="p-1 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg text-red-500"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>

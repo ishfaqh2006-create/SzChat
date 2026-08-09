@@ -48,11 +48,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(data.user);
           localStorage.setItem('szchat_user', JSON.stringify(data.user));
           getSocket(token); // Connect Socket.IO
-        } else {
+        } else if (res.status === 401 || res.status === 403) {
           logout();
         }
       } catch (err) {
-        console.error('Auth verification error:', err);
+        console.warn('Auth verification network delay/error, keeping cached session:', err);
+        // Connect socket anyway with token
+        if (token) getSocket(token);
       } finally {
         setIsLoading(false);
       }

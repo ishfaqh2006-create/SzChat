@@ -51,6 +51,7 @@ interface ChatContextType {
   addGroupMember: (chatId: string, userId: string) => Promise<void>;
   removeGroupMember: (chatId: string, userId: string) => Promise<void>;
   leaveGroupChat: (chatId: string) => Promise<void>;
+  deleteChat: (chatId: string) => Promise<void>;
   loadMoreMessages: () => Promise<void>;
   refreshChats: () => Promise<void>;
 }
@@ -318,6 +319,23 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     socket.on('message:reaction', handleMessageReaction);
     socket.on('user:presence', handleUserPresence);
 
+    // Auto-reconnect & sync state on mobile app resume or post-phone-call
+    const handleVisibilityOrOnline = () => {
+      if (document.visibilityState === 'visible' || navigator.onLine) {
+        const s = getSocket(token);
+        if (s) {
+          if (s.disconnected) s.connect();
+          if (activeChatIdRef.current) {
+            s.emit('chat:join', { chatId: activeChatIdRef.current });
+          }
+        }
+        refreshChats();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityOrOnline);
+    window.addEventListener('online', handleVisibilityOrOnline);
+
     return () => {
       socket.off('message:new', handleNewMessage);
       socket.off('message:updated', handleMessageUpdated);
@@ -325,6 +343,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       socket.off('chat:read', handleChatRead);
       socket.off('message:reaction', handleMessageReaction);
       socket.off('user:presence', handleUserPresence);
+      document.removeEventListener('visibilitychange', handleVisibilityOrOnline);
+      window.removeEventListener('online', handleVisibilityOrOnline);
     };
   }, [token, user, refreshChats]);
 
@@ -617,6 +637,16 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const deleteChat = async (chatId: string) => {
+    if (!token) return;
+    setChats(prev => prev.filter(c => c.id !== chatId));
+    if (activeChatId === chatId) setActiveChatId(null);
+    await fetch(`/api/chats/${chatId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }).catch(() => {});
+  };
+
   const activeTypingUsers = activeChatId ? typingMap[activeChatId] || [] : [];
 
   return (
@@ -649,6 +679,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addGroupMember,
         removeGroupMember,
         leaveGroupChat,
+        deleteChat,
         loadMoreMessages,
         refreshChats,
       }}

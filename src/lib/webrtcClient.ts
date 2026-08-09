@@ -6,6 +6,14 @@ const ICE_SERVERS: RTCConfiguration = {
   ],
 };
 
+function tuneOpusAudioSDP(sdp: string): string {
+  if (!sdp.includes('opus')) return sdp;
+  return sdp.replace(/a=fmtp:(\d+)(.*)/g, (match, pt, params) => {
+    if (params.includes('maxaveragebitrate')) return match;
+    return `a=fmtp:${pt} maxaveragebitrate=32000;useinbandfec=1;stereo=0;sprop-stereo=0${params}`;
+  });
+}
+
 export class WebRTCClient {
   private peerConnection: RTCPeerConnection | null = null;
   private localStream: MediaStream | null = null;
@@ -31,6 +39,9 @@ export class WebRTCClient {
         echoCancellation: true,
         noiseSuppression: true,
         autoGainControl: true,
+        channelCount: { max: 1 },
+        sampleRate: { ideal: 48000 },
+        sampleSize: { ideal: 16 },
       },
       video: false,
     });
@@ -90,8 +101,12 @@ export class WebRTCClient {
     });
 
     const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-    return offer;
+    const tunedOffer = {
+      type: offer.type,
+      sdp: offer.sdp ? tuneOpusAudioSDP(offer.sdp) : offer.sdp,
+    };
+    await pc.setLocalDescription(tunedOffer);
+    return tunedOffer;
   }
 
   async handleOffer(offer: RTCSessionDescriptionInit): Promise<RTCSessionDescriptionInit> {
@@ -110,8 +125,12 @@ export class WebRTCClient {
     await this.processPendingCandidates();
 
     const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-    return answer;
+    const tunedAnswer = {
+      type: answer.type,
+      sdp: answer.sdp ? tuneOpusAudioSDP(answer.sdp) : answer.sdp,
+    };
+    await pc.setLocalDescription(tunedAnswer);
+    return tunedAnswer;
   }
 
   async handleAnswer(answer: RTCSessionDescriptionInit) {
@@ -158,32 +177,26 @@ export class WebRTCClient {
   }
 
   async toggleSpeaker(isSpeakerOn: boolean) {
-    if (!this.remoteAudioElement) return;
+    if (this.remoteAudioElement) {
+      this.remoteAudioElement.volume = isSpeakerOn ? 1.0 : 0.4;
+      try {
+        if ('setSinkId' in this.remoteAudioElement && typeof (this.remoteAudioElement as any).setSinkId === 'function') {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const audioOutputs = devices.filter((device) => device.kind === 'audiooutput');
 
-    try {
-      if ('setSinkId' in this.remoteAudioElement && typeof (this.remoteAudioElement as any).setSinkId === 'function') {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const audioOutputs = devices.filter((device) => device.kind === 'audiooutput');
-
-        if (audioOutputs.length > 0) {
-          if (isSpeakerOn) {
-            const speakerDevice = audioOutputs.find((d) =>
-              d.label.toLowerCase().includes('speaker') || d.label.toLowerCase().includes('loudspeaker')
-            ) || audioOutputs[0];
-            await (this.remoteAudioElement as any).setSinkId(speakerDevice.deviceId);
-          } else {
-            const earpieceDevice = audioOutputs.find((d) =>
-              d.label.toLowerCase().includes('earpiece') || d.label.toLowerCase().includes('receiver') || d.label.toLowerCase().includes('phone')
-            );
-            await (this.remoteAudioElement as any).setSinkId(earpieceDevice ? earpieceDevice.deviceId : '');
+          if (audioOutputs.length > 0) {
+            const chosen = isSpeakerOn
+              ? audioOutputs.find((d) => d.label.toLowerCase().includes('speaker') || d.label.toLowerCase().includes('loud')) || audioOutputs[0]
+              : audioOutputs.find((d) => d.label.toLowerCase().includes('earpiece') || d.label.toLowerCase().includes('phone')) || audioOutputs[0];
+            if (chosen) {
+              await (this.remoteAudioElement as any).setSinkId(chosen.deviceId);
+            }
           }
         }
+      } catch (err) {
+        console.warn('Audio output device selection notice:', err);
       }
-    } catch (err) {
-      console.warn('Audio output device selection error:', err);
     }
-
-    this.remoteAudioElement.volume = isSpeakerOn ? 1.0 : 0.8;
   }
 
   cleanup() {

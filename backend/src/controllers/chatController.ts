@@ -132,3 +132,12 @@ export const setDisappearingTimer = async (req: AuthRequest, res: Response) => {
     res.status(400).json({ error: err.message });
   }
 };
+
+export const deleteChat = async (req: AuthRequest, res: Response) => {
+  try {
+    await db.deleteChatForUser(req.params.id, req.user!.id);
+    res.json({ status: 'ok' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to delete chat' });
+  }
+};

@@ -14,15 +14,12 @@ export function getSocket(token?: string): Socket | null {
     return null;
   }
 
-  // Reuse existing socket instance if token matches and is not disconnected
-  if (socket && currentToken === activeToken && !socket.disconnected) {
+  // Reuse existing socket instance and reconnect if disconnected
+  if (socket && currentToken === activeToken) {
+    if (socket.disconnected) {
+      socket.connect();
+    }
     return socket;
-  }
-
-  // Clean up stale socket
-  if (socket) {
-    socket.disconnect();
-    socket = null;
   }
 
   currentToken = activeToken;

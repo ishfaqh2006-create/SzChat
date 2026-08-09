@@ -5,12 +5,18 @@ import { createServer as createViteServer } from 'vite';
 import { createExpressApp } from './backend/src/app.js';
 import { initSocketHandler } from './backend/src/sockets/socketHandler.js';
 import { CONFIG } from './backend/src/config/index.js';
+import { db } from './backend/src/db/db.js';
 
 const app = createExpressApp();
 const httpServer = createServer(app);
 
 // Initialize Socket.IO Handler
 initSocketHandler(httpServer);
+
+// Periodic Database Quota Cleanup (every 10 minutes)
+setInterval(() => {
+  db.runDatabaseQuotaCleanup().catch(() => {});
+}, 10 * 60 * 1000);
 
 // Vite Middleware for SPA Frontend
 async function start() {

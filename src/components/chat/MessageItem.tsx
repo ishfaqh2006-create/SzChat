@@ -33,6 +33,8 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
   const [showMenu, setShowMenu] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [viewOncePreviewUrl, setViewOncePreviewUrl] = useState<string | null>(null);
+  const [isViewOnceModalOpen, setIsViewOnceModalOpen] = useState(false);
+  const [activeImageLightboxUrl, setActiveImageLightboxUrl] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const replyTarget = message.replyTo || (message.replyToId ? messages.find(m => m.id === message.replyToId) : undefined);
@@ -74,6 +76,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
   const handleViewOnceClick = () => {
     if (message.fileUrl) {
       setViewOncePreviewUrl(message.fileUrl);
+      setIsViewOnceModalOpen(true);
       openViewOnceMedia(message.id);
     }
   };
@@ -183,12 +186,18 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
               ) : (
                 /* Regular Image Type */
                 message.type === 'image' && message.fileUrl && (
-                  <div className="mb-2 rounded-xl overflow-hidden max-w-sm">
+                  <div
+                    onClick={() => setActiveImageLightboxUrl(message.fileUrl!)}
+                    className="mb-2 rounded-xl overflow-hidden max-w-sm cursor-pointer group/img relative"
+                  >
                     <img
                       src={message.fileUrl}
                       alt="Shared image"
-                      className="w-full max-h-80 object-cover rounded-xl"
+                      className="w-full max-h-80 object-cover rounded-xl group-hover/img:scale-[1.02] transition-transform duration-200"
                     />
+                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-semibold">
+                      Click to view full screen
+                    </div>
                   </div>
                 )
               )}
@@ -374,6 +383,69 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
             {displayReactions.map((r, idx) => (
               <span key={idx}>{r.emoji}</span>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* View-Once Photo Lightbox Modal */}
+      {isViewOnceModalOpen && viewOncePreviewUrl && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/95 backdrop-blur-md p-4 animate-fadeIn">
+          <div className="w-full max-w-2xl flex items-center justify-between p-4 text-white z-10">
+            <div className="flex items-center space-x-2 text-emerald-400 font-semibold text-sm">
+              <Eye className="w-5 h-5" />
+              <span>View-Once Photo</span>
+            </div>
+            <button
+              onClick={() => {
+                setIsViewOnceModalOpen(false);
+                setViewOncePreviewUrl(null);
+              }}
+              className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-full text-white transition-colors"
+            >
+              Close & Discard
+            </button>
+          </div>
+          <div className="flex-1 flex items-center justify-center p-2 w-full max-w-4xl min-h-0">
+            <img
+              src={viewOncePreviewUrl}
+              alt="View once photo"
+              className="max-w-full max-h-[75vh] object-contain rounded-2xl shadow-2xl border border-zinc-800"
+            />
+          </div>
+          <p className="text-zinc-400 text-xs text-center pb-4">
+            ⚠️ This photo will be removed permanently once closed.
+          </p>
+        </div>
+      )}
+
+      {/* Regular Image Lightbox Modal */}
+      {activeImageLightboxUrl && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-fadeIn">
+          <div className="w-full max-w-3xl flex items-center justify-between p-3 text-white z-10">
+            <span className="text-xs font-semibold text-zinc-300">Shared Image</span>
+            <div className="flex items-center space-x-3">
+              <a
+                href={activeImageLightboxUrl}
+                download={message.fileName || 'photo.jpg'}
+                className="flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-lg transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download Photo</span>
+              </a>
+              <button
+                onClick={() => setActiveImageLightboxUrl(null)}
+                className="p-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-full text-white transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+          <div className="flex-1 flex items-center justify-center p-2 w-full max-w-4xl min-h-0">
+            <img
+              src={activeImageLightboxUrl}
+              alt="Full view"
+              className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl"
+            />
           </div>
         </div>
       )}

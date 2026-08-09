@@ -136,7 +136,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           onCancel={() => setIsRecordingVoice(false)}
         />
       ) : (
-        <form onSubmit={handleSend} className="flex items-center space-x-1 sm:space-x-2 w-full max-w-full overflow-hidden">
+        <form onSubmit={handleSend} autoComplete="off" noValidate className="flex items-center space-x-1 sm:space-x-2 w-full max-w-full overflow-hidden">
           <button
             type="button"
             onClick={() => setShowPicker(!showPicker)}
@@ -179,15 +179,18 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           </button>
 
           <input
-            type="text"
-            id="chat_message_content"
-            name="chat_message_content"
+            type="search"
+            id="sz_chat_msg_input_field"
+            name="sz_chat_msg_input_field"
             autoComplete="off"
             autoCorrect="off"
             autoCapitalize="sentences"
             spellCheck={false}
             data-form-type="other"
             data-lpignore="true"
+            data-1p-ignore="true"
+            data-bwignore="true"
+            aria-autocomplete="none"
             value={content}
             onChange={handleTextChange}
             placeholder={isViewOnceEnabled ? 'Send View Once photo...' : 'Type a message...'}

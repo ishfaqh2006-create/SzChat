@@ -92,7 +92,7 @@ function MainApp() {
       />
 
       {/* Main Chat Viewport */}
-      <div className={`flex-1 h-full ${activeChatId ? 'flex' : 'hidden md:flex'}`}>
+      <div className={`flex-1 h-full min-h-0 overflow-hidden ${activeChatId ? 'flex flex-col' : 'hidden md:flex flex-col'}`}>
         <ChatArea
           onBackMobile={() => selectChat(null)}
           onOpenGroupInfo={() => setIsGroupInfoOpen(true)}

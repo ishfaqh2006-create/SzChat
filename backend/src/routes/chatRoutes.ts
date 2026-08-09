@@ -13,6 +13,7 @@ import {
   removeMember,
   leaveGroup,
   setDisappearingTimer,
+  deleteChat,
 } from '../controllers/chatController.js';
 import { authMiddleware } from '../middleware/auth.js';
 
@@ -31,5 +32,6 @@ router.post('/:id/disappearing', authMiddleware, setDisappearingTimer);
 router.post('/:id/members', authMiddleware, addMember);
 router.delete('/:id/members/:userId', authMiddleware, removeMember);
 router.post('/:id/leave', authMiddleware, leaveGroup);
+router.delete('/:id', authMiddleware, deleteChat);
 
 export default router;

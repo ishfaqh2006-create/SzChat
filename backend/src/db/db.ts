@@ -919,6 +919,42 @@ class Database {
       };
     });
   }
+
+  async deleteChatForUser(chatId: string, userId: string): Promise<void> {
+    await prisma.chatMember.deleteMany({
+      where: { chatId, userId },
+    });
+  }
+
+  async runDatabaseQuotaCleanup(): Promise<void> {
+    try {
+      // 1. Delete view-once messages older than 1 hour or already viewed
+      await prisma.message.deleteMany({
+        where: {
+          isViewOnce: true,
+          isViewed: true,
+        },
+      });
+
+      // 2. Delete messages older than disappearing timers across chats
+      const disappearingChats = await prisma.chat.findMany({
+        where: { disappearingTimer: { gt: 0 } },
+        select: { id: true, disappearingTimer: true },
+      });
+
+      for (const chat of disappearingChats) {
+        const cutoff = new Date(Date.now() - chat.disappearingTimer * 1000);
+        await prisma.message.deleteMany({
+          where: {
+            chatId: chat.id,
+            createdAt: { lt: cutoff },
+          },
+        });
+      }
+    } catch (e) {
+      console.warn('Database quota cleanup notice:', e);
+    }
+  }
 }
 
 export const db = new Database();

@@ -20,16 +20,31 @@ export const MessageList: React.FC<MessageListProps> = ({
   const { messages, loadMoreMessages, activeChat } = useChat();
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const isInitialLoadRef = useRef(true);
+  const prevChatIdRef = useRef<string | null>(null);
 
-  // Auto-scroll to bottom when chat switches or new message is sent/received
+  // Instant scroll to bottom when switching chats or loading initial messages
   useEffect(() => {
-    if (bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: 'instant', block: 'end' });
+    if (activeChat?.id !== prevChatIdRef.current) {
+      prevChatIdRef.current = activeChat?.id || null;
+      isInitialLoadRef.current = true;
     }
-  }, [activeChat?.id]);
 
+    if (containerRef.current) {
+      if (isInitialLoadRef.current && messages.length > 0) {
+        containerRef.current.scrollTop = containerRef.current.scrollHeight;
+        // Also scroll bottomRef instantly
+        if (bottomRef.current) {
+          bottomRef.current.scrollIntoView({ behavior: 'instant', block: 'end' });
+        }
+        isInitialLoadRef.current = false;
+      }
+    }
+  }, [activeChat?.id, messages]);
+
+  // Smooth scroll to bottom ONLY for new messages added while actively viewing
   useEffect(() => {
-    if (bottomRef.current) {
+    if (!isInitialLoadRef.current && bottomRef.current) {
       bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
   }, [messages.length]);
