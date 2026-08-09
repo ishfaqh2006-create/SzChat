@@ -40,15 +40,12 @@ export const MessageList: React.FC<MessageListProps> = ({
       // If switching chat, initial load, or sent by current user: scroll to bottom ALWAYS
       if (isChatChanged || prevMsgLengthRef.current === 0 || isSentByMe) {
         containerRef.current.scrollTop = containerRef.current.scrollHeight;
-        if (bottomRef.current) {
-          bottomRef.current.scrollIntoView({ behavior: 'instant', block: 'end' });
-        }
       } else if (messages.length > prevMsgLengthRef.current) {
         // Incoming message from contact: smooth scroll if user is near bottom
         const el = containerRef.current;
         const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 200;
-        if (isNearBottom && bottomRef.current) {
-          bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        if (isNearBottom) {
+          el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
         }
       }
     }

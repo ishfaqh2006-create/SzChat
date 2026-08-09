@@ -28,6 +28,8 @@ export function useVisualViewport() {
       if (window.scrollY !== 0 || window.scrollX !== 0) {
         window.scrollTo(0, 0);
       }
+      if (document.body.scrollTop !== 0) document.body.scrollTop = 0;
+      if (document.documentElement.scrollTop !== 0) document.documentElement.scrollTop = 0;
     };
 
     if (window.visualViewport) {
@@ -35,7 +37,8 @@ export function useVisualViewport() {
       window.visualViewport.addEventListener('scroll', handleResizeOrScroll);
     }
     window.addEventListener('resize', handleResizeOrScroll);
-    window.addEventListener('scroll', handleResizeOrScroll);
+    window.addEventListener('scroll', handleResizeOrScroll, { passive: true });
+    document.addEventListener('scroll', handleResizeOrScroll, { passive: true });
 
     handleResizeOrScroll();
 
@@ -46,6 +49,7 @@ export function useVisualViewport() {
       }
       window.removeEventListener('resize', handleResizeOrScroll);
       window.removeEventListener('scroll', handleResizeOrScroll);
+      document.removeEventListener('scroll', handleResizeOrScroll);
     };
   }, []);
 

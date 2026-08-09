@@ -157,7 +157,13 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
               e.stopPropagation();
               const el = document.getElementById(`msg-${replyTarget.id}`);
               if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const container = el.closest('.overflow-y-auto');
+                if (container) {
+                  const cRect = container.getBoundingClientRect();
+                  const eRect = el.getBoundingClientRect();
+                  const targetScroll = eRect.top - cRect.top + container.scrollTop - 60;
+                  container.scrollTo({ top: targetScroll, behavior: 'smooth' });
+                }
                 el.classList.add('ring-2', 'ring-emerald-500');
                 setTimeout(() => el.classList.remove('ring-2', 'ring-emerald-500'), 1500);
               }
