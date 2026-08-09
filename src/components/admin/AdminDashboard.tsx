@@ -7,68 +7,34 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
-  const { token } = useAuth();
-  const [phoneNumber, setPhoneNumber] = useState('6005547858');
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
+  const { token, user } = useAuth();
+  const [masterPassword, setMasterPassword] = useState('');
   const [adminSecretKey, setAdminSecretKey] = useState('');
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [usersList, setUsersList] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [infoMsg, setInfoMsg] = useState('');
   const [error, setError] = useState('');
 
-  const handleRequestOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    setInfoMsg('');
-
-    try {
-      const res = await fetch('/api/admin/request-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ phoneNumber: phoneNumber.trim() }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to request OTP');
-
-      setOtpSent(true);
-      setInfoMsg(data.message || 'OTP Code sent successfully!');
-    } catch (err: any) {
-      setError(err.message || 'Failed to send OTP');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
+  const handleUnlockAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      const res = await fetch('/api/admin/verify-otp', {
+      const res = await fetch('/api/admin/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          otpCode: otpCode.trim(),
-          adminSecret: adminSecretKey.trim(),
-        }),
+        body: JSON.stringify({ masterPassword: masterPassword.trim() }),
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'OTP verification failed');
+      if (!res.ok) throw new Error(data.error || 'Authentication failed');
 
-      const secretToken = data.token || 'szchat_master_admin_secret_2026!';
+      const secretToken = data.token || 'IshfaqAdmin@2026!';
       setAdminSecretKey(secretToken);
 
       // Fetch admin stats
@@ -130,7 +96,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
             </div>
             <div>
               <h3 className="font-bold text-base text-white">SzChat Super-Admin Control Panel</h3>
-              <p className="text-[11px] text-zinc-400">Authorized Phone OTP Verification (+91 6005547858)</p>
+              <p className="text-[11px] text-zinc-400">Master Owner Access ({user?.displayName || 'Ishfaq'})</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white">
@@ -139,85 +105,45 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
         </div>
 
         {!isUnlocked ? (
-          /* Phone OTP Security Authentication */
-          <div className="p-8 space-y-4 max-w-sm mx-auto w-full text-center">
+          /* Master Passcode Security Authentication */
+          <form onSubmit={handleUnlockAdmin} className="p-8 space-y-4 max-w-sm mx-auto w-full text-center">
             <div className="w-14 h-14 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto">
               <Lock className="w-7 h-7" />
             </div>
             <div>
-              <h4 className="font-bold text-sm">Super-Admin Phone OTP Verification</h4>
-              <p className="text-xs text-zinc-400 mt-1">Requires 6-Digit OTP Sent to Admin Phone</p>
+              <h4 className="font-bold text-sm">Super-Admin Master Password</h4>
+              <p className="text-xs text-zinc-400 mt-1">Enter Master Password to unlock full control dashboard</p>
             </div>
 
-            {!otpSent ? (
-              <form onSubmit={handleRequestOtp} className="space-y-3">
-                <div className="bg-zinc-800/80 p-3.5 rounded-xl border border-emerald-500/30 text-left">
-                  <span className="text-[10px] font-bold uppercase text-emerald-400 block mb-1">
-                    Server-Locked Authorized Admin Phone
-                  </span>
-                  <div className="flex items-center space-x-2 text-white font-mono font-bold text-xs">
-                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                    <span>+91 6005547858 (Verified Master Owner)</span>
-                  </div>
-                </div>
+            <div className="bg-zinc-800/80 p-3 rounded-xl border border-emerald-500/30 text-left">
+              <span className="text-[10px] font-bold uppercase text-emerald-400 block mb-1">
+                Authorized Master Account
+              </span>
+              <div className="flex items-center space-x-2 text-white font-mono font-bold text-xs">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <span>@{user?.username || 'Ishfaq'} (Verified Owner)</span>
+              </div>
+            </div>
 
-                {error && <p className="text-xs text-red-400 font-semibold">{error}</p>}
+            <input
+              type="password"
+              required
+              value={masterPassword}
+              onChange={(e) => setMasterPassword(e.target.value)}
+              placeholder="Enter Master Password..."
+              className="w-full px-4 py-3 bg-zinc-800 border border-emerald-500/50 rounded-xl text-xs outline-none text-white text-center font-mono"
+            />
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 font-bold rounded-xl text-xs transition-all shadow-lg"
-                >
-                  {loading ? 'Sending Security OTP...' : 'Send 6-Digit OTP to +91 6005547858'}
-                </button>
-              </form>
-            ) : (
-              <form onSubmit={handleVerifyOtp} className="space-y-3">
-                {infoMsg && <p className="text-xs text-emerald-400 bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-500/30">{infoMsg}</p>}
+            {error && <p className="text-xs text-red-400 font-semibold">{error}</p>}
 
-                <div>
-                  <label className="text-[10px] font-bold uppercase text-zinc-400 block mb-1 text-left">Enter 6-Digit OTP Code</label>
-                  <input
-                    type="text"
-                    required
-                    maxLength={6}
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value)}
-                    placeholder="E.g. 849201"
-                    className="w-full px-4 py-3 bg-zinc-800 border border-emerald-500/50 rounded-xl text-sm outline-none text-white text-center font-mono font-bold tracking-widest"
-                  />
-                </div>
-
-                <div className="pt-1">
-                  <input
-                    type="password"
-                    value={adminSecretKey}
-                    onChange={(e) => setAdminSecretKey(e.target.value)}
-                    placeholder="Or enter Master Passcode fallback..."
-                    className="w-full px-3 py-2 bg-zinc-800/60 border border-zinc-700/50 rounded-xl text-[11px] outline-none text-zinc-400 text-center font-mono"
-                  />
-                </div>
-
-                {error && <p className="text-xs text-red-400 font-semibold">{error}</p>}
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 font-bold rounded-xl text-xs transition-all shadow-lg"
-                >
-                  {loading ? 'Verifying OTP...' : 'Verify OTP & Unlock Dashboard'}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setOtpSent(false)}
-                  className="text-xs text-zinc-400 underline hover:text-white block mx-auto pt-1"
-                >
-                  Resend OTP Code
-                </button>
-              </form>
-            )}
-          </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 font-bold rounded-xl text-xs transition-all shadow-lg"
+            >
+              {loading ? 'Authenticating...' : 'Unlock Admin Control Panel'}
+            </button>
+          </form>
         ) : (
           /* Admin Dashboard Content */
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
