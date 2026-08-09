@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { useChat } from '../../context/ChatContext.js';
+import { useAuth } from '../../context/AuthContext.js';
 import { MessageItem } from './MessageItem.js';
 import { Message } from '../../types/index.js';
 import { ChevronDown } from 'lucide-react';
@@ -17,6 +18,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   onEdit,
   inChatSearchQuery,
 }) => {
+  const { user } = useAuth();
   const { messages, loadMoreMessages, activeChat } = useChat();
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -32,23 +34,26 @@ export const MessageList: React.FC<MessageListProps> = ({
     }
 
     if (containerRef.current && messages.length > 0) {
-      // If switching chat or initial load, set scrollTop to scrollHeight synchronously
-      if (isChatChanged || prevMsgLengthRef.current === 0) {
+      const latestMsg = messages[messages.length - 1];
+      const isSentByMe = latestMsg?.senderId === user?.id;
+
+      // If switching chat, initial load, or sent by current user: scroll to bottom ALWAYS
+      if (isChatChanged || prevMsgLengthRef.current === 0 || isSentByMe) {
         containerRef.current.scrollTop = containerRef.current.scrollHeight;
         if (bottomRef.current) {
           bottomRef.current.scrollIntoView({ behavior: 'instant', block: 'end' });
         }
       } else if (messages.length > prevMsgLengthRef.current) {
-        // New incoming/outgoing message: smooth scroll ONLY if user is already near bottom
+        // Incoming message from contact: smooth scroll if user is near bottom
         const el = containerRef.current;
-        const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+        const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 200;
         if (isNearBottom && bottomRef.current) {
           bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
         }
       }
     }
     prevMsgLengthRef.current = messages.length;
-  }, [activeChat?.id, messages]);
+  }, [activeChat?.id, messages, user?.id]);
 
   // Handle infinite scroll up
   const handleScroll = () => {

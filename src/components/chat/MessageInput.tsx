@@ -26,12 +26,15 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const textInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Sync content if editing
+  // Auto-focus input when replying or editing
   React.useEffect(() => {
     if (editingMessage) {
       setContent(editingMessage.content);
+      textInputRef.current?.focus({ preventScroll: true });
+    } else if (replyingTo) {
+      textInputRef.current?.focus({ preventScroll: true });
     }
-  }, [editingMessage]);
+  }, [editingMessage, replyingTo]);
 
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();

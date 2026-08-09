@@ -13,9 +13,12 @@ const httpServer = createServer(app);
 // Initialize Socket.IO Handler
 initSocketHandler(httpServer);
 
-// Periodic Database Quota Cleanup (every 10 minutes)
+// Periodic Database Quota Cleanup & Render Server Keep-Alive Self-Ping (every 10 minutes)
 setInterval(() => {
   db.runDatabaseQuotaCleanup().catch(() => {});
+
+  const renderUrl = process.env.RENDER_EXTERNAL_URL || 'http://127.0.0.1:3000';
+  fetch(`${renderUrl}/api/auth/me`).catch(() => {});
 }, 10 * 60 * 1000);
 
 // Vite Middleware for SPA Frontend

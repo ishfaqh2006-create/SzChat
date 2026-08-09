@@ -397,11 +397,28 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
         refreshChats();
+
+        const currentActive = activeChatIdRef.current;
+        if (currentActive) {
+          fetch(`/api/chats/${currentActive}/messages?limit=50`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+            .then(res => (res.ok ? res.json() : null))
+            .then(data => {
+              if (data && data.messages) {
+                setMessages(data.messages);
+                indexedDBService.cacheMessages(currentActive, data.messages);
+              }
+            })
+            .catch(() => {});
+        }
       }
     };
 
+    socket.on('connect', handleVisibilityOrOnline);
     document.addEventListener('visibilitychange', handleVisibilityOrOnline);
     window.addEventListener('online', handleVisibilityOrOnline);
+    window.addEventListener('focus', handleVisibilityOrOnline);
 
     return () => {
       socket.off('message:new', handleNewMessage);
@@ -410,8 +427,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       socket.off('chat:read', handleChatRead);
       socket.off('message:reaction', handleMessageReaction);
       socket.off('user:presence', handleUserPresence);
+      socket.off('connect', handleVisibilityOrOnline);
       document.removeEventListener('visibilitychange', handleVisibilityOrOnline);
       window.removeEventListener('online', handleVisibilityOrOnline);
+      window.removeEventListener('focus', handleVisibilityOrOnline);
     };
   }, [token, user, refreshChats]);
 

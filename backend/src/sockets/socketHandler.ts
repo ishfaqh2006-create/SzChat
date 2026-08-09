@@ -142,9 +142,7 @@ export function initSocketHandler(httpServer: HTTPServer) {
         db.getChatForUser(data.chatId, userId).then((chat) => {
           if (chat && chat.members) {
             for (const m of chat.members) {
-              if (m.userId !== userId) {
-                io.to(`user:${m.userId}`).emit('message:new', instantMessage);
-              }
+              io.to(`user:${m.userId}`).emit('message:new', instantMessage);
             }
           }
         }).catch(() => {});

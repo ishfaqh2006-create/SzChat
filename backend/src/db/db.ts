@@ -951,6 +951,20 @@ class Database {
           },
         });
       }
+      // 3. Purge old call logs older than 30 days
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      await prisma.call.deleteMany({
+        where: { startedAt: { lt: thirtyDaysAgo } },
+      });
+
+      // 4. Purge messages soft-deleted for everyone older than 7 days
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      await prisma.message.deleteMany({
+        where: {
+          isDeletedForEveryone: true,
+          updatedAt: { lt: sevenDaysAgo },
+        },
+      });
     } catch (e) {
       console.warn('Database quota cleanup notice:', e);
     }
