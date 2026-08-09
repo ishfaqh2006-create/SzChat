@@ -81,7 +81,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ onBackMobile, onOpenGroupInf
         inChatSearchQuery={inChatSearchQuery}
       />
 
-      <div className="sticky bottom-0 z-30 flex-shrink-0 w-full">
+      <div className="flex-shrink-0 w-full z-30">
         <MessageInput
           replyingTo={replyingTo}
           editingMessage={editingMessage}

@@ -98,7 +98,7 @@ function MainApp() {
 
   return (
     <div
-      className="fixed inset-0 w-full h-full overflow-hidden flex bg-zinc-100 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 select-none font-sans"
+      className="w-full h-full min-h-0 overflow-hidden flex bg-zinc-100 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 select-none font-sans"
     >
       {/* Sidebar Navigation */}
       <Sidebar

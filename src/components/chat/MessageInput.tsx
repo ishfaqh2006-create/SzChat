@@ -103,7 +103,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 p-3 relative flex-shrink-0 z-20 w-full sticky bottom-0">
+    <div className="bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 p-3 relative flex-shrink-0 z-20 w-full">
       {/* Replying Bar */}
       {replyingTo && (
         <div className="mb-2 p-2 px-3 bg-zinc-100 dark:bg-zinc-800/80 border-l-4 border-emerald-500 rounded-r-xl flex items-center justify-between text-xs">
