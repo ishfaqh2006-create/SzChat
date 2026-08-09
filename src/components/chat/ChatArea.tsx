@@ -41,7 +41,6 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ onBackMobile, onOpenGroupInf
   return (
     <main
       className="flex-1 min-h-0 h-full max-h-full flex flex-col w-full max-w-full bg-zinc-100 dark:bg-zinc-950 relative overflow-hidden"
-      style={isMobile ? { height: `${viewportHeight}px`, maxHeight: `${viewportHeight}px` } : { height: '100%' }}
     >
       <div className="sticky top-0 z-30 flex-shrink-0 w-full">
         <ChatHeader

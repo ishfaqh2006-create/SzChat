@@ -212,7 +212,12 @@ export class WebRTCClient {
     }
 
     if (this.remoteAudioElement) {
+      this.remoteAudioElement.pause();
       this.remoteAudioElement.srcObject = null;
+      if (this.remoteAudioElement.parentNode) {
+        this.remoteAudioElement.parentNode.removeChild(this.remoteAudioElement);
+      }
+      this.remoteAudioElement = null;
     }
     this.pendingCandidates = [];
   }

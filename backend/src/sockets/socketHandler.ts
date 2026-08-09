@@ -303,6 +303,14 @@ export function initSocketHandler(httpServer: HTTPServer) {
       });
     });
 
+    socket.on('call:busy', async ({ callId, callerId }: { callId: string; callerId: string }) => {
+      await db.addCallLog(callerId, userId, '', 'busy', 0);
+      io.to(`user:${callerId}`).emit('call:busy', {
+        callId,
+        reason: 'busy',
+      });
+    });
+
     socket.on('call:offer', ({ targetId, sdp }: { targetId: string; sdp: any }) => {
       io.to(`user:${targetId}`).emit('call:offer', {
         senderId: userId,

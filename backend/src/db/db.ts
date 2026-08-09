@@ -812,6 +812,10 @@ class Database {
         where: { chatId, userId },
         data: { unreadCount: 0, lastReadAt: new Date() },
       }),
+      prisma.message.updateMany({
+        where: { chatId, senderId: { not: userId } },
+        data: { status: 'READ' },
+      }),
       prisma.messageStatus.updateMany({
         where: { message: { chatId }, userId },
         data: { status: 'READ' },

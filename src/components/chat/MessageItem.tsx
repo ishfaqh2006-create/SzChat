@@ -48,13 +48,14 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
   const [swipeOffset, setSwipeOffset] = useState(0);
   const touchStartXRef = useRef(0);
   const touchStartYRef = useRef(0);
+  const touchTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartXRef.current = e.touches[0].clientX;
     touchStartYRef.current = e.touches[0].clientY;
 
-    if ((window as any)._msgTouchTimer) clearTimeout((window as any)._msgTouchTimer);
-    (window as any)._msgTouchTimer = setTimeout(() => {
+    if (touchTimerRef.current) clearTimeout(touchTimerRef.current);
+    touchTimerRef.current = setTimeout(() => {
       setShowMenu(true);
     }, 500);
   };
@@ -64,7 +65,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
     const deltaY = Math.abs(e.touches[0].clientY - touchStartYRef.current);
 
     if (Math.abs(deltaX) > 10 || deltaY > 10) {
-      if ((window as any)._msgTouchTimer) clearTimeout((window as any)._msgTouchTimer);
+      if (touchTimerRef.current) clearTimeout(touchTimerRef.current);
     }
 
     if (deltaX > 0 && deltaX < 100 && deltaX > deltaY) {
@@ -73,7 +74,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, onReply, onFo
   };
 
   const handleTouchEnd = () => {
-    if ((window as any)._msgTouchTimer) clearTimeout((window as any)._msgTouchTimer);
+    if (touchTimerRef.current) clearTimeout(touchTimerRef.current);
 
     if (swipeOffset > 45) {
       onReply(message);

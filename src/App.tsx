@@ -14,9 +14,12 @@ import { PinLockModal } from './components/modals/PinLockModal.js';
 import { NotificationToast } from './components/common/NotificationToast.js';
 import { AdminDashboard } from './components/admin/AdminDashboard.js';
 
+import { useVisualViewport } from './lib/useVisualViewport.js';
+
 function MainApp() {
   const { user, isLoading } = useAuth();
   const { activeChatId, selectChat, activeToast, dismissToast } = useChat();
+  useVisualViewport();
 
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
   const [isNewGroupOpen, setIsNewGroupOpen] = useState(false);
@@ -94,7 +97,10 @@ function MainApp() {
   }
 
   return (
-    <div className="h-[100dvh] w-full max-w-full overflow-x-hidden flex bg-zinc-100 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 select-none font-sans">
+    <div
+      style={{ height: 'var(--vv-height, 100dvh)' }}
+      className="w-full max-w-full overflow-hidden flex bg-zinc-100 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 select-none font-sans"
+    >
       {/* Sidebar Navigation */}
       <Sidebar
         onOpenNewChat={() => setIsNewChatOpen(true)}

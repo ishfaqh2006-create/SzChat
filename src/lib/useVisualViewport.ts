@@ -2,32 +2,39 @@ import { useState, useEffect } from 'react';
 
 export function useVisualViewport() {
   const [viewportHeight, setViewportHeight] = useState<number>(() => {
-    return window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    if (typeof window !== 'undefined' && window.visualViewport) {
+      return window.visualViewport.height;
+    }
+    return typeof window !== 'undefined' ? window.innerHeight : 0;
   });
 
   const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
 
   useEffect(() => {
-    if (!window.visualViewport) return;
+    if (typeof window === 'undefined') return;
 
     const handleResizeOrScroll = () => {
       const vv = window.visualViewport;
-      if (!vv) return;
-
-      const currentHeight = vv.height;
+      const currentHeight = vv ? vv.height : window.innerHeight;
       setViewportHeight(currentHeight);
 
-      const computedKeyboardHeight = Math.max(0, window.innerHeight - currentHeight);
+      document.documentElement.style.setProperty('--vv-height', `${currentHeight}px`);
+
+      const computedKeyboardHeight = vv
+        ? Math.max(0, window.innerHeight - vv.height)
+        : 0;
       setKeyboardHeight(computedKeyboardHeight);
 
-      // Lock window scroll position so body never scrolls up
       if (window.scrollY !== 0 || window.scrollX !== 0) {
         window.scrollTo(0, 0);
       }
     };
 
-    window.visualViewport.addEventListener('resize', handleResizeOrScroll);
-    window.visualViewport.addEventListener('scroll', handleResizeOrScroll);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResizeOrScroll);
+      window.visualViewport.addEventListener('scroll', handleResizeOrScroll);
+    }
+    window.addEventListener('resize', handleResizeOrScroll);
     window.addEventListener('scroll', handleResizeOrScroll);
 
     handleResizeOrScroll();
@@ -37,9 +44,11 @@ export function useVisualViewport() {
         window.visualViewport.removeEventListener('resize', handleResizeOrScroll);
         window.visualViewport.removeEventListener('scroll', handleResizeOrScroll);
       }
+      window.removeEventListener('resize', handleResizeOrScroll);
       window.removeEventListener('scroll', handleResizeOrScroll);
     };
   }, []);
 
   return { viewportHeight, keyboardHeight };
 }
+

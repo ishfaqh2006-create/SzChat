@@ -199,16 +199,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 const url = prompt('Enter Wallpaper Image URL for this chat (leave blank to clear):', activeChat.wallpaper || '');
                 if (url !== null) {
                   try {
-                    await fetch(`/api/chats/${activeChat.id}/wallpaper`, {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${localStorage.getItem('szchat_token')}`,
-                      },
-                      body: JSON.stringify({ wallpaper: url.trim() || null }),
-                    });
-                    alert(url.trim() ? 'Chat wallpaper updated for both participants!' : 'Reset to default chat wallpaper.');
-                    window.location.reload();
+                    await setWallpaper(activeChat.id, url.trim() || '');
                   } catch (e) {}
                 }
                 setShowMenu(false);

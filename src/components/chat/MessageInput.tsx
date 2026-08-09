@@ -44,10 +44,12 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     setContent('');
     sendTyping(false);
 
-    // Keep focus on input on mobile send so typing bar stays pinned above keyboard
-    setTimeout(() => {
-      textInputRef.current?.focus({ preventScroll: true });
-    }, 10);
+    // Focus input on desktop send only; avoid keyboard trap on mobile
+    if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+      setTimeout(() => {
+        textInputRef.current?.focus({ preventScroll: true });
+      }, 10);
+    }
 
     if (editingMessage) {
       await editMessage(editingMessage.id, toSend);

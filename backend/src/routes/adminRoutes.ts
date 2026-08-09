@@ -2,8 +2,10 @@ import { Router, Response } from 'express';
 import { authMiddleware, AuthRequest } from '../middleware/auth.js';
 import { db, prisma } from '../db/db.js';
 
+import { CONFIG } from '../config/index.js';
+
 const router = Router();
-const ADMIN_SECRET = process.env.ADMIN_SECRET_KEY || 'IshfaqAdmin@2026!';
+const ADMIN_SECRET = process.env.ADMIN_SECRET_KEY || CONFIG.JWT_SECRET;
 
 // 1. Direct Master Password Login reserved exclusively for Account Ishfaq
 router.post('/login', authMiddleware, (req: AuthRequest, res: Response) => {
@@ -13,7 +15,7 @@ router.post('/login', authMiddleware, (req: AuthRequest, res: Response) => {
   }
 
   const { masterPassword } = req.body;
-  if (!masterPassword || (masterPassword.trim() !== ADMIN_SECRET && masterPassword.trim() !== 'szchat_master_admin_secret_2026!')) {
+  if (!masterPassword || masterPassword.trim() !== ADMIN_SECRET) {
     return res.status(401).json({ error: 'Incorrect Master Admin Password.' });
   }
 
@@ -23,7 +25,7 @@ router.post('/login', authMiddleware, (req: AuthRequest, res: Response) => {
 // Middleware to enforce Master Password Token
 const superAdminMiddleware = (req: AuthRequest, res: Response, next: any) => {
   const adminKey = req.headers['x-admin-secret-key'];
-  if (!adminKey || (adminKey !== ADMIN_SECRET && adminKey !== 'szchat_master_admin_secret_2026!')) {
+  if (!adminKey || adminKey !== ADMIN_SECRET) {
     return res.status(403).json({ error: 'Access denied: Invalid Admin Security Credential' });
   }
   next();
