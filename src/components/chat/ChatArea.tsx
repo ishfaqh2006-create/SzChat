@@ -5,6 +5,7 @@ import { MessageList } from './MessageList.js';
 import { MessageInput } from './MessageInput.js';
 import { Message } from '../../types/index.js';
 import { MessageSquare, Search, X } from 'lucide-react';
+import { useVisualViewport } from '../../lib/useVisualViewport.js';
 
 interface ChatAreaProps {
   onBackMobile: () => void;
@@ -13,6 +14,7 @@ interface ChatAreaProps {
 
 export const ChatArea: React.FC<ChatAreaProps> = ({ onBackMobile, onOpenGroupInfo }) => {
   const { activeChat } = useChat();
+  const { viewportHeight } = useVisualViewport();
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [showInChatSearch, setShowInChatSearch] = useState(false);
@@ -32,8 +34,13 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ onBackMobile, onOpenGroupInf
     );
   }
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
   return (
-    <main className="flex-1 min-h-0 h-full max-h-full flex flex-col w-full max-w-full bg-zinc-100 dark:bg-zinc-950 relative overflow-hidden">
+    <main
+      className="flex-1 min-h-0 flex flex-col w-full max-w-full bg-zinc-100 dark:bg-zinc-950 relative overflow-hidden"
+      style={isMobile ? { height: `${viewportHeight}px`, maxHeight: `${viewportHeight}px` } : { height: '100%' }}
+    >
       <div className="sticky top-0 z-30 flex-shrink-0 w-full">
         <ChatHeader
           onBackMobile={onBackMobile}
@@ -44,7 +51,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ onBackMobile, onOpenGroupInf
 
       {/* In-chat Search Bar Overlay */}
       {showInChatSearch && (
-        <div className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 p-2.5 px-4 flex items-center space-x-2 animate-slideDown z-10">
+        <div className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 p-2.5 px-4 flex items-center space-x-2 animate-slideDown z-20 flex-shrink-0">
           <Search className="w-4 h-4 text-zinc-400" />
           <input
             type="text"
@@ -69,7 +76,6 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ onBackMobile, onOpenGroupInf
       <MessageList
         onReply={(msg) => setReplyingTo(msg)}
         onForward={(msg) => {
-          // Handle forward - copy content to clipboard or start chat forward
           navigator.clipboard.writeText(msg.content);
           alert('Message copied for forwarding!');
         }}
@@ -77,12 +83,14 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ onBackMobile, onOpenGroupInf
         inChatSearchQuery={inChatSearchQuery}
       />
 
-      <MessageInput
-        replyingTo={replyingTo}
-        editingMessage={editingMessage}
-        onClearReply={() => setReplyingTo(null)}
-        onClearEdit={() => setEditingMessage(null)}
-      />
+      <div className="sticky bottom-0 z-30 flex-shrink-0 w-full">
+        <MessageInput
+          replyingTo={replyingTo}
+          editingMessage={editingMessage}
+          onClearReply={() => setReplyingTo(null)}
+          onClearEdit={() => setEditingMessage(null)}
+        />
+      </div>
     </main>
   );
 };
