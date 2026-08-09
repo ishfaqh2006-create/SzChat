@@ -148,7 +148,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           onCancel={() => setIsRecordingVoice(false)}
         />
       ) : (
-        <form onSubmit={handleSend} autoComplete="off" noValidate className="flex items-center space-x-1 sm:space-x-2 w-full max-w-full overflow-hidden">
+        <div className="flex items-center space-x-1 sm:space-x-2 w-full max-w-full overflow-hidden">
           <button
             type="button"
             onClick={() => setShowPicker(!showPicker)}
@@ -194,26 +194,31 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             type="text"
             enterKeyHint="send"
             ref={textInputRef}
-            id="sz_chat_msg_input_field"
-            name="sz_chat_msg_input_field"
-            autoComplete="off"
+            id="chat_message_input"
+            name="message"
+            autoComplete="one-time-code"
             autoCorrect="off"
             autoCapitalize="sentences"
             spellCheck={false}
-            data-form-type="other"
             data-lpignore="true"
             data-1p-ignore="true"
             data-bwignore="true"
-            aria-autocomplete="none"
             value={content}
             onChange={handleTextChange}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
             placeholder={isViewOnceEnabled ? 'Send View Once photo...' : 'Type a message...'}
             className="flex-1 min-w-0 px-2.5 sm:px-4 py-2 sm:py-2.5 bg-zinc-100 dark:bg-zinc-800/80 border border-transparent focus:border-emerald-500/50 rounded-xl text-xs sm:text-sm focus:outline-none dark:text-white placeholder-zinc-400 transition-all"
           />
 
           {content.trim() ? (
             <button
-              type="submit"
+              type="button"
+              onClick={() => handleSend()}
               className="p-2 sm:p-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl shadow-lg shadow-emerald-600/20 transition-all flex-shrink-0"
             >
               <Send className="w-4 h-4" />
@@ -228,7 +233,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
               <Mic className="w-4 h-4" />
             </button>
           )}
-        </form>
+        </div>
       )}
     </div>
   );
