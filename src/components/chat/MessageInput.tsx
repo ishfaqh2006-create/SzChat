@@ -26,12 +26,16 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const textInputRef = useRef<HTMLInputElement | null>(null);
 
+  const [isReadOnly, setIsReadOnly] = useState(true);
+
   // Auto-focus input when replying or editing
   React.useEffect(() => {
     if (editingMessage) {
       setContent(editingMessage.content);
+      setIsReadOnly(false);
       textInputRef.current?.focus({ preventScroll: true });
     } else if (replyingTo) {
+      setIsReadOnly(false);
       textInputRef.current?.focus({ preventScroll: true });
     }
   }, [editingMessage, replyingTo]);
@@ -192,17 +196,22 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
           <input
             type="text"
+            inputMode="text"
+            readOnly={isReadOnly}
+            onFocus={() => setIsReadOnly(false)}
+            onTouchStart={() => setIsReadOnly(false)}
             enterKeyHint="send"
             ref={textInputRef}
             id="chat_message_input"
-            name="message"
-            autoComplete="one-time-code"
+            name="chat_msg_text"
+            autoComplete="off"
             autoCorrect="off"
             autoCapitalize="sentences"
             spellCheck={false}
             data-lpignore="true"
             data-1p-ignore="true"
             data-bwignore="true"
+            data-form-type="other"
             value={content}
             onChange={handleTextChange}
             onKeyDown={(e) => {
