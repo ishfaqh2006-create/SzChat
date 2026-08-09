@@ -4,6 +4,7 @@ import { useAuth } from './AuthContext.js';
 import { getSocket } from '../lib/socketClient.js';
 import { indexedDBService } from '../lib/indexedDB.js';
 import { soundEffects } from '../lib/sound.js';
+import { ToastData } from '../components/common/NotificationToast.js';
 
 const deduplicateMessages = (msgs: Message[]): Message[] => {
   const seen = new Set<string>();
@@ -26,6 +27,9 @@ interface ChatContextType {
   searchQuery: string;
   isSearching: boolean;
   activeTab: 'chats' | 'archived' | 'calls';
+  activeToast: ToastData | null;
+  dismissToast: () => void;
+  requestNotificationPermission: () => void;
   setActiveTab: (tab: 'chats' | 'archived' | 'calls') => void;
   setSearchQuery: (q: string) => void;
   selectChat: (chatId: string | null) => void;
@@ -66,6 +70,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [typingMap, setTypingMap] = useState<Record<string, TypingStatus[]>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'chats' | 'archived' | 'calls'>('chats');
+  const [activeToast, setActiveToast] = useState<ToastData | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const activeChatIdRef = useRef<string | null>(activeChatId);
@@ -74,6 +79,65 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [activeChatId]);
 
   const activeChat = chats.find(c => c.id === activeChatId) || null;
+
+  const requestNotificationPermission = useCallback(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
+  }, []);
+
+  // Request Notification permission on first user tap/gesture
+  useEffect(() => {
+    const handleGesture = () => {
+      requestNotificationPermission();
+    };
+    window.addEventListener('click', handleGesture, { once: true });
+    window.addEventListener('touchstart', handleGesture, { once: true });
+    return () => {
+      window.removeEventListener('click', handleGesture);
+      window.removeEventListener('touchstart', handleGesture);
+    };
+  }, [requestNotificationPermission]);
+
+  const dismissToast = useCallback(() => {
+    setActiveToast(null);
+  }, []);
+
+  // Dispatch Device Notification & In-App Toast
+  const notifyUser = useCallback((senderName: string, snippet: string, iconUrl?: string, chatId?: string) => {
+    // 1. Device System Notification
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.ready.then((reg) => {
+          reg.showNotification(`SzChat — ${senderName}`, {
+            body: snippet,
+            icon: iconUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=szchat_app_logo',
+            badge: iconUrl,
+            tag: 'szchat-msg',
+          });
+        }).catch(() => {
+          new Notification(`SzChat — ${senderName}`, { body: snippet, icon: iconUrl });
+        });
+      } else {
+        new Notification(`SzChat — ${senderName}`, { body: snippet, icon: iconUrl });
+      }
+    }
+
+    // 2. Floating In-App Toast Banner
+    if (chatId) {
+      const toastId = Date.now().toString();
+      setActiveToast({
+        id: toastId,
+        chatId,
+        senderName,
+        senderAvatar: iconUrl,
+        content: snippet,
+      });
+      setTimeout(() => {
+        setActiveToast((curr) => (curr?.id === toastId ? null : curr));
+      }, 4500);
+    }
+  }, []);
 
   // Load chats from API & IndexedDB
   const refreshChats = useCallback(async () => {
@@ -109,13 +173,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     async function loadMessages() {
-      const cachedMsgs = await indexedDBService.getCachedMessages(activeChatId!);
-      if (cachedMsgs.length > 0) {
-        setMessages(cachedMsgs);
-      }
-
       try {
-        const res = await fetch(`/api/chats/${activeChatId}/messages?limit=50`, {
+        const cached = await indexedDBService.getCachedMessages(activeChatId!);
+        if (cached.length > 0) {
+          setMessages(cached);
+        }
+
+        const res = await fetch(`/api/messages/${activeChatId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
@@ -123,16 +187,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setMessages(data.messages);
           indexedDBService.cacheMessages(activeChatId!, data.messages);
 
-          // Mark chat as read locally and on server
-          setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, unreadCount: 0 } : c));
-
           fetch(`/api/chats/${activeChatId}/read`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${token}` },
-          });
+          }).catch(() => {});
 
           const socket = getSocket(token);
-          socket?.emit('chat:join', { chatId: activeChatId });
           socket?.emit('chat:mark_read', { chatId: activeChatId });
         }
       } catch (err) {
@@ -149,10 +209,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const socket = getSocket(token);
     if (!socket) return;
 
-    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
-      Notification.requestPermission().catch(() => {});
-    }
-
     const handleNewMessage = (msg: Message) => {
       const currentActiveId = activeChatIdRef.current;
 
@@ -161,16 +217,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         socket.emit('message:delivered', { messageId: msg.id, chatId: msg.chatId, senderId: msg.senderId });
         soundEffects.playMessageReceived();
 
-        // Device Push Notification if app is backgrounded or chat inactive
-        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-          if (document.hidden || msg.chatId !== currentActiveId) {
-            const senderName = msg.sender?.displayName || msg.sender?.username || 'Contact';
-            const snippet = msg.content || (msg.type === 'image' ? '📷 Sent a photo' : msg.type === 'audio' ? '🎵 Sent a voice message' : '📁 Sent an attachment');
-            new Notification(`SzChat — ${senderName}`, {
-              body: snippet,
-              icon: msg.sender?.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=szchat_app_logo',
-            });
-          }
+        // Trigger System Notification & In-App Toast
+        if (document.hidden || msg.chatId !== currentActiveId) {
+          const senderName = msg.sender?.displayName || msg.sender?.username || 'Contact';
+          const snippet = msg.content || (msg.type === 'image' ? '📷 Sent a photo' : msg.type === 'audio' ? '🎵 Sent a voice message' : '📁 Sent an attachment');
+          notifyUser(senderName, snippet, msg.sender?.avatarUrl, msg.chatId);
         }
       } else {
         soundEffects.playMessageSent();
@@ -677,6 +728,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         searchQuery,
         isSearching: !!searchQuery,
         activeTab,
+        activeToast,
+        dismissToast,
+        requestNotificationPermission,
         setActiveTab,
         setSearchQuery,
         selectChat,

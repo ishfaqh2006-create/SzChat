@@ -11,10 +11,11 @@ import { GroupInfoModal } from './components/modals/GroupInfoModal.js';
 import { SettingsModal } from './components/modals/SettingsModal.js';
 import { CallOverlay } from './components/call/CallOverlay.js';
 import { PinLockModal } from './components/modals/PinLockModal.js';
+import { NotificationToast } from './components/common/NotificationToast.js';
 
 function MainApp() {
   const { user, isLoading } = useAuth();
-  const { activeChatId, selectChat } = useChat();
+  const { activeChatId, selectChat, activeToast, dismissToast } = useChat();
 
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
   const [isNewGroupOpen, setIsNewGroupOpen] = useState(false);
@@ -119,6 +120,13 @@ function MainApp() {
           onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
         />
       )}
+
+      {/* Floating Real-Time Notification Toast */}
+      <NotificationToast
+        toast={activeToast}
+        onSelect={(chatId) => selectChat(chatId)}
+        onDismiss={dismissToast}
+      />
 
       {/* WebRTC Audio Call Banner & Overlay */}
       <CallOverlay />
