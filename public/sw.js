@@ -1,11 +1,6 @@
-const CACHE_NAME = 'szchat-v1';
+const CACHE_NAME = 'szchat-v2-cachebust';
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(['/']);
-    })
-  );
   self.skipWaiting();
 });
 
@@ -24,7 +19,15 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
-  // Network first, fallback to cache
+  // Always fetch fresh network content for HTML pages to ensure updates reflect immediately
+  if (event.request.mode === 'navigate' || event.request.headers.get('accept')?.includes('text/html')) {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Network first for other assets
   event.respondWith(
     fetch(event.request).catch(() => caches.match(event.request))
   );
