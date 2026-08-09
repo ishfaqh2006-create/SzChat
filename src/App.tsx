@@ -98,8 +98,7 @@ function MainApp() {
 
   return (
     <div
-      style={{ height: 'var(--vv-height, 100%)', position: 'fixed', top: 0, bottom: 0, left: 0, right: 0 }}
-      className="w-full max-w-full overflow-hidden flex bg-zinc-100 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 select-none font-sans"
+      className="fixed inset-0 w-full h-full overflow-hidden flex bg-zinc-100 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 select-none font-sans"
     >
       {/* Sidebar Navigation */}
       <Sidebar
