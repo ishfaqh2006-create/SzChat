@@ -920,6 +920,13 @@ class Database {
     });
   }
 
+  async updateAllMembersWallpaper(chatId: string, wallpaper: string | null): Promise<void> {
+    await prisma.chatMember.updateMany({
+      where: { chatId },
+      data: { wallpaper },
+    });
+  }
+
   async deleteChatForUser(chatId: string, userId: string): Promise<void> {
     await prisma.chatMember.deleteMany({
       where: { chatId, userId },

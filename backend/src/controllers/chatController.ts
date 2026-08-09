@@ -88,8 +88,11 @@ export const archiveChat = async (req: AuthRequest, res: Response) => {
 export const setWallpaper = async (req: AuthRequest, res: Response) => {
   try {
     const { wallpaper } = req.body;
-    await db.updateChatMember(req.params.id, req.user!.id, { wallpaper });
-    res.json({ status: 'ok' });
+    const wallpaperValue = wallpaper ? wallpaper : null;
+
+    // Update wallpaper for all members in this chat so both participants see it
+    await db.updateAllMembersWallpaper(req.params.id, wallpaperValue);
+    res.json({ status: 'ok', wallpaper: wallpaperValue });
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }

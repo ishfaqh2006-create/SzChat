@@ -3,7 +3,7 @@ import { useChat } from '../../context/ChatContext.js';
 import { useCall } from '../../context/CallContext.js';
 import { useAuth } from '../../context/AuthContext.js';
 import { Avatar } from '../common/Avatar.js';
-import { Phone, Search, Info, ArrowLeft, MoreVertical, Pin, Wallpaper, Clock, BellOff, Trash2 } from 'lucide-react';
+import { Phone, Search, Info, ArrowLeft, MoreVertical, Pin, Wallpaper, Clock, BellOff, Trash2, Sparkles } from 'lucide-react';
 
 interface ChatHeaderProps {
   onBackMobile: () => void;
@@ -192,6 +192,31 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             >
               <Clock className="w-4 h-4 text-emerald-500" />
               <span>Disappearing Messages</span>
+            </button>
+
+            <button
+              onClick={async () => {
+                const url = prompt('Enter Wallpaper Image URL for this chat (leave blank to clear):', activeChat.wallpaper || '');
+                if (url !== null) {
+                  try {
+                    await fetch(`/api/chats/${activeChat.id}/wallpaper`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${localStorage.getItem('szchat_token')}`,
+                      },
+                      body: JSON.stringify({ wallpaper: url.trim() || null }),
+                    });
+                    alert(url.trim() ? 'Chat wallpaper updated for both participants!' : 'Reset to default chat wallpaper.');
+                    window.location.reload();
+                  } catch (e) {}
+                }
+                setShowMenu(false);
+              }}
+              className="w-full px-3.5 py-2 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center space-x-2.5 text-zinc-700 dark:text-zinc-300"
+            >
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              <span>{activeChat.wallpaper ? 'Change / Reset Wallpaper' : 'Set Chat Wallpaper'}</span>
             </button>
 
             <button
