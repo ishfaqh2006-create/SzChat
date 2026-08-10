@@ -3,6 +3,22 @@ import { io, Socket } from 'socket.io-client';
 let socket: Socket | null = null;
 let currentToken: string | null = null;
 
+if (typeof window !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && socket && socket.disconnected) {
+      console.log('Tab visible: Reconnecting socket...');
+      socket.connect();
+    }
+  });
+
+  window.addEventListener('online', () => {
+    if (socket && socket.disconnected) {
+      console.log('Network online: Reconnecting socket...');
+      socket.connect();
+    }
+  });
+}
+
 export function getSocket(token?: string): Socket | null {
   const activeToken = token || localStorage.getItem('szchat_token');
   if (!activeToken) {

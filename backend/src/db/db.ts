@@ -981,6 +981,26 @@ class Database {
       console.warn('Database quota cleanup notice:', e);
     }
   }
+
+  private pushSubscriptionsMap = new Map<string, Array<{ endpoint: string; keys: { p256dh: string; auth: string } }>>();
+
+  savePushSubscription(userId: string, subscription: { endpoint: string; keys: { p256dh: string; auth: string } }): void {
+    if (!subscription || !subscription.endpoint || !subscription.keys) return;
+    const existing = this.pushSubscriptionsMap.get(userId) || [];
+    const filtered = existing.filter((s) => s.endpoint !== subscription.endpoint);
+    filtered.push(subscription);
+    this.pushSubscriptionsMap.set(userId, filtered);
+  }
+
+  getPushSubscriptions(userId: string): Array<{ endpoint: string; keys: { p256dh: string; auth: string } }> {
+    return this.pushSubscriptionsMap.get(userId) || [];
+  }
+
+  removePushSubscription(userId: string, endpoint: string): void {
+    const existing = this.pushSubscriptionsMap.get(userId) || [];
+    const filtered = existing.filter((s) => s.endpoint !== endpoint);
+    this.pushSubscriptionsMap.set(userId, filtered);
+  }
 }
 
 export const db = new Database();

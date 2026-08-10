@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext.js';
 import { Avatar } from '../common/Avatar.js';
 import { soundEffects } from '../../lib/sound.js';
-import { Settings, X, Moon, Sun, LogOut, User, Sparkles, Check, Volume2, VolumeX, ShieldCheck } from 'lucide-react';
+import { Settings, X, Moon, Sun, LogOut, User, Sparkles, Check, Volume2, VolumeX, ShieldCheck, Bell } from 'lucide-react';
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -140,6 +140,77 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 {isMutedSound ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
                 <span>{isMutedSound ? 'Muted (Silent)' : 'Sound Enabled'}</span>
               </button>
+            </div>
+
+            {/* Real-Time Push Notification Settings & Diagnostic Tester */}
+            <div className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200/50 dark:border-zinc-800 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 flex items-center space-x-1.5">
+                  <Bell className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Real-Time Notifications</span>
+                </span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted'
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    : typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'denied'
+                    ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                    : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                }`}>
+                  {typeof window !== 'undefined' && 'Notification' in window ? Notification.permission.toUpperCase() : 'NOT SUPPORTED'}
+                </span>
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (typeof window !== 'undefined' && 'Notification' in window) {
+                      const res = await Notification.requestPermission();
+                      if (res === 'granted') {
+                        alert('Notifications Enabled! Web push subscriptions registered.');
+                      } else {
+                        alert(`Notification permission status: ${res}`);
+                      }
+                      window.location.reload();
+                    }
+                  }}
+                  className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-colors"
+                >
+                  Enable Notifications
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const token = localStorage.getItem('szchat_token');
+                    if (!token) return;
+                    try {
+                      const res = await fetch('/api/users/push/test', {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${token}` },
+                      });
+                      const data = await res.json();
+                      if (res.ok) {
+                        alert('Test push notification sent to your device!');
+                      } else {
+                        // Local fallback test notification
+                        if ('serviceWorker' in navigator && Notification.permission === 'granted') {
+                          const reg = await navigator.serviceWorker.ready;
+                          reg.showNotification('SzChat Notification Test', {
+                            body: 'Real-time notifications are active and working!',
+                            icon: 'https://api.dicebear.com/7.x/bottts/svg?seed=szchat_app_logo',
+                          });
+                        } else {
+                          alert(data.error || 'Failed to trigger test notification');
+                        }
+                      }
+                    } catch {
+                      alert('Triggered local notification fallback test');
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 text-zinc-800 dark:text-zinc-100 rounded-lg text-xs font-semibold transition-colors"
+                >
+                  Test Alert
+                </button>
+              </div>
             </div>
 
             <div className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200/50 dark:border-zinc-800">

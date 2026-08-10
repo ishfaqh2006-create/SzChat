@@ -108,6 +108,15 @@ class SoundEffects {
     this.ringtoneInterval = window.setInterval(playPulse, isIncoming ? 1800 : 2500);
   }
 
+  unlock() {
+    try {
+      const ctx = this.getContext();
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+    } catch {}
+  }
+
   stopRingtone() {
     if (this.ringtoneInterval !== null) {
       clearInterval(this.ringtoneInterval);
@@ -117,3 +126,11 @@ class SoundEffects {
 }
 
 export const soundEffects = new SoundEffects();
+
+if (typeof window !== 'undefined') {
+  const unlockAudio = () => {
+    soundEffects.unlock();
+  };
+  window.addEventListener('click', unlockAudio, { once: true });
+  window.addEventListener('touchstart', unlockAudio, { once: true });
+}

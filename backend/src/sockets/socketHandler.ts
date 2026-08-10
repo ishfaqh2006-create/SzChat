@@ -2,6 +2,7 @@ import { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import { verifyToken } from '../middleware/auth.js';
 import { db, prisma } from '../db/db.js';
+import { pushService } from '../services/pushService.js';
 
 export interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -141,8 +142,33 @@ export function initSocketHandler(httpServer: HTTPServer) {
 
         db.getChatForUser(data.chatId, userId).then((chat) => {
           if (chat && chat.members) {
+            const senderName = senderUser?.displayName || senderUser?.username || 'Contact';
+            const snippet = data.content || (data.type === 'image' ? '📷 Sent a photo' : data.type === 'audio' ? '🎵 Sent a voice message' : '📁 Sent an attachment');
+
             for (const m of chat.members) {
-              io.to(`user:${m.userId}`).emit('message:new', instantMessage);
+              if (m.userId !== userId) {
+                io.to(`user:${m.userId}`).emit('message:new', instantMessage);
+
+                // Dispatch Web Push Notification for backgrounded/offline users
+                const recipientSockets = userSockets.get(m.userId);
+                const isRecipientActive = recipientSockets && recipientSockets.size > 0;
+
+                // Send background push if recipient is not online or as a guaranteed background deliverer
+                const pushSubs = db.getPushSubscriptions(m.userId);
+                for (const sub of pushSubs) {
+                  pushService.sendNotification(sub, {
+                    title: `SzChat — ${senderName}`,
+                    body: snippet,
+                    icon: senderUser?.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=szchat_app_logo',
+                    url: `/`,
+                    chatId: data.chatId,
+                  }).then((success) => {
+                    if (!success) {
+                      db.removePushSubscription(m.userId, sub.endpoint);
+                    }
+                  }).catch(() => {});
+                }
+              }
             }
           }
         }).catch(() => {});

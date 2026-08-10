@@ -95,13 +95,73 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const activeChat = chats.find(c => c.id === activeChatId) || null;
 
-  const requestNotificationPermission = useCallback(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission().catch(() => {});
+  // Helper to convert VAPID base64 URL to Uint8Array
+  const urlBase64ToUint8Array = (base64String: string) => {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
     }
-  }, []);
+    return outputArray;
+  };
 
-  // Request Notification permission on first user tap/gesture
+  // Subscribe browser to Web Push VAPID notifications
+  const subscribeToWebPush = useCallback(async () => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window) || !token) {
+      return;
+    }
+    if (Notification.permission !== 'granted') return;
+
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
+
+      if (!sub) {
+        const res = await fetch('/api/users/push/vapid-key', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const { publicKey } = await res.json();
+        if (!publicKey) return;
+
+        const convertedKey = urlBase64ToUint8Array(publicKey);
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: convertedKey,
+        });
+      }
+
+      if (sub) {
+        await fetch('/api/users/push/subscribe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ subscription: sub }),
+        });
+      }
+    } catch (err) {
+      console.warn('Web Push subscription notice:', err);
+    }
+  }, [token]);
+
+  const requestNotificationPermission = useCallback(async () => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        const perm = await Notification.requestPermission().catch(() => 'default');
+        if (perm === 'granted') {
+          subscribeToWebPush();
+        }
+      } else if (Notification.permission === 'granted') {
+        subscribeToWebPush();
+      }
+    }
+  }, [subscribeToWebPush]);
+
+  // Request Notification permission on user tap/gesture & trigger Web Push registration
   useEffect(() => {
     const handleGesture = () => {
       requestNotificationPermission();
@@ -114,27 +174,56 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [requestNotificationPermission]);
 
+  // Listen for Service Worker messages to focus chats from background notification clicks
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+
+    const handleSWMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'OPEN_CHAT' && event.data.chatId) {
+        setActiveChatId(event.data.chatId);
+      }
+    };
+
+    navigator.serviceWorker.addEventListener('message', handleSWMessage);
+    return () => {
+      navigator.serviceWorker.removeEventListener('message', handleSWMessage);
+    };
+  }, []);
+
   const dismissToast = useCallback(() => {
     setActiveToast(null);
   }, []);
 
-  // Dispatch Device Notification & In-App Toast
+  // Dispatch Device Notification & In-App Toast safely across mobile and desktop
   const notifyUser = useCallback((senderName: string, snippet: string, iconUrl?: string, chatId?: string) => {
-    // 1. Device System Notification
+    const title = `SzChat — ${senderName}`;
+    const icon = iconUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=szchat_app_logo';
+
+    // 1. Device System Notification (Service Worker preferred to support Mobile Chrome)
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      if ('serviceWorker' in navigator) {
         navigator.serviceWorker.ready.then((reg) => {
-          reg.showNotification(`SzChat — ${senderName}`, {
+          reg.showNotification(title, {
             body: snippet,
-            icon: iconUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=szchat_app_logo',
-            badge: iconUrl,
-            tag: 'szchat-msg',
-          });
+            icon,
+            badge: icon,
+            tag: chatId ? `chat-${chatId}` : 'szchat-msg',
+            renotify: true,
+            data: { url: '/', chatId },
+          } as any);
         }).catch(() => {
-          new Notification(`SzChat — ${senderName}`, { body: snippet, icon: iconUrl });
+          try {
+            new Notification(title, { body: snippet, icon });
+          } catch (e) {
+            console.warn('System notification constructor blocked:', e);
+          }
         });
       } else {
-        new Notification(`SzChat — ${senderName}`, { body: snippet, icon: iconUrl });
+        try {
+          new Notification(title, { body: snippet, icon });
+        } catch (e) {
+          console.warn('System notification constructor blocked:', e);
+        }
       }
     }
 
@@ -219,11 +308,61 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadMessages();
   }, [activeChatId, token]);
 
+  // Tab visibility re-sync & Unread Title Badge
+  const totalUnreadCount = chats.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (totalUnreadCount > 0) {
+      document.title = `(${totalUnreadCount}) SzChat — Fast & Secure Messaging`;
+      if ('setAppBadge' in navigator) {
+        navigator.setAppBadge(totalUnreadCount).catch(() => {});
+      }
+    } else {
+      document.title = 'SzChat — Fast & Secure Messaging';
+      if ('clearAppBadge' in navigator) {
+        navigator.clearAppBadge().catch(() => {});
+      }
+    }
+  }, [totalUnreadCount]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        refreshChats();
+        if (activeChatIdRef.current && token) {
+          fetch(`/api/chats/${activeChatIdRef.current}/messages?limit=50`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+              if (data?.messages) {
+                setMessages(data.messages);
+              }
+            })
+            .catch(() => {});
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [token, refreshChats]);
+
   // Persistent Socket Event Listeners
   useEffect(() => {
     if (!token || !user) return;
     const socket = getSocket(token);
     if (!socket) return;
+
+    const handleConnect = () => {
+      refreshChats();
+      subscribeToWebPush();
+    };
+
+    socket.on('connect', handleConnect);
 
     const handleNewMessage = (msg: Message) => {
       const currentActiveId = activeChatIdRef.current;
