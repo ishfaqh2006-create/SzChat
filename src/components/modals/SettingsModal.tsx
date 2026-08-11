@@ -60,7 +60,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         {/* Body Form */}
-        <form onSubmit={handleSave} className="p-6 space-y-4">
+        <form onSubmit={handleSave} className="p-6 space-y-4 flex-1 overflow-y-auto min-h-0">
           <div className="text-center">
             <Avatar src={avatarUrl || user?.avatarUrl} name={displayName || 'User'} size="xl" className="mx-auto mb-2" />
             <p className="text-xs text-zinc-400">@{user?.username}</p>

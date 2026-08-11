@@ -53,13 +53,6 @@ router.get('/stats', authMiddleware, superAdminMiddleware, async (_req, res) => 
   }
 });
 
-interface UserVisibilityConfig {
-  mode: string;
-  allowedUserIds: string[];
-}
-
-const userVisibilityMap: Record<string, UserVisibilityConfig> = {};
-
 // 2. User Directory & Visibility Modes
 router.get('/users', authMiddleware, superAdminMiddleware, async (_req, res) => {
   try {
@@ -77,11 +70,14 @@ router.get('/users', authMiddleware, superAdminMiddleware, async (_req, res) => 
       },
     });
 
-    const formatted = users.map((u) => ({
-      ...u,
-      visibilityMode: userVisibilityMap[u.id]?.mode || 'EVERYONE',
-      allowedUserIds: userVisibilityMap[u.id]?.allowedUserIds || [],
-    }));
+    const formatted = users.map((u) => {
+      const vis = db.getUserVisibility(u.id);
+      return {
+        ...u,
+        visibilityMode: vis.mode,
+        allowedUserIds: vis.allowedUserIds,
+      };
+    });
 
     res.json({ users: formatted });
   } catch (err: any) {
@@ -95,17 +91,14 @@ router.post('/users/:userId/visibility', authMiddleware, superAdminMiddleware, a
     const { userId } = req.params;
     const { visibilityMode, allowedUserIds } = req.body;
     
-    userVisibilityMap[userId] = {
-      mode: visibilityMode || 'EVERYONE',
-      allowedUserIds: Array.isArray(allowedUserIds) ? allowedUserIds : [],
-    };
+    const updatedVis = db.setUserVisibility(userId, visibilityMode, allowedUserIds);
 
     res.json({
       status: 'ok',
       userId,
-      visibilityMode: userVisibilityMap[userId].mode,
-      allowedUserIds: userVisibilityMap[userId].allowedUserIds,
-      message: `Visibility mode updated to ${visibilityMode}`,
+      visibilityMode: updatedVis.mode,
+      allowedUserIds: updatedVis.allowedUserIds,
+      message: `Visibility mode updated to ${updatedVis.mode}`,
     });
   } catch (err: any) {
     res.status(500).json({ error: 'Failed to update user visibility' });
