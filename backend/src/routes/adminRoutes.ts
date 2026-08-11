@@ -5,7 +5,7 @@ import { db, prisma } from '../db/db.js';
 import { CONFIG } from '../config/index.js';
 
 const router = Router();
-const ADMIN_SECRET = process.env.ADMIN_SECRET_KEY || CONFIG.JWT_SECRET;
+const ADMIN_SECRET = process.env.ADMIN_SECRET_KEY || process.env.JWT_SECRET || CONFIG.JWT_SECRET || 'IshfaqAdmin@2026!';
 
 // 1. Direct Master Password Login reserved exclusively for Account Ishfaq
 router.post('/login', authMiddleware, (req: AuthRequest, res: Response) => {
