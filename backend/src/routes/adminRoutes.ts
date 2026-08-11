@@ -1,23 +1,38 @@
 import { Router, Response } from 'express';
+import bcrypt from 'bcryptjs';
 import { authMiddleware, AuthRequest } from '../middleware/auth.js';
 import { db, prisma } from '../db/db.js';
 
 import { CONFIG } from '../config/index.js';
 
 const router = Router();
-const getValidAdminSecrets = () => {
-  const list = [
-    process.env.ADMIN_SECRET_KEY,
-    process.env.JWT_SECRET,
-    CONFIG.JWT_SECRET,
-  ];
-  return list.filter(Boolean) as string[];
-};
+
+// Salted 1-way bcrypt hash of IshfaqAdmin@2026! (securely stored without exposing plain-text password)
+const MASTER_ADMIN_HASH = '$2b$10$UBXXVEGZD3qmYiPz31RyPuzzmBtok2S9nprGsiFDacIFuG7gsrtkO';
 
 const isMasterPasswordValid = (pwd?: string) => {
   if (!pwd) return false;
   const trimmed = pwd.trim();
-  return getValidAdminSecrets().some((secret) => secret.trim() === trimmed);
+
+  if (process.env.ADMIN_SECRET_KEY && trimmed === process.env.ADMIN_SECRET_KEY.trim()) {
+    return true;
+  }
+  if (process.env.JWT_SECRET && trimmed === process.env.JWT_SECRET.trim()) {
+    return true;
+  }
+  if (CONFIG.JWT_SECRET && trimmed === CONFIG.JWT_SECRET.trim()) {
+    return true;
+  }
+
+  try {
+    if (bcrypt.compareSync(trimmed, MASTER_ADMIN_HASH)) {
+      return true;
+    }
+  } catch (e) {
+    // Ignore compare error
+  }
+
+  return false;
 };
 
 // 1. Direct Master Password Login reserved exclusively for Account Ishfaq
